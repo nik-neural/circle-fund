@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>圓子基金 — 群組消費記帳</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;family=Inter:wght@400;500;600&amp;display=swap');
+    
+    :root {
+      --primary: #10b981;
+    }
+    
+    body {
+      font-family: 'Noto Sans TC', 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    .expense-card {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .expense-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+    }
+    
+    .participant-badge {
+      transition: all 0.1s ease;
+    }
+    
+    .participant-badge:hover {
+      background-color: #f1e7ff;
+    }
+    
+    .section-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.025em;
+      color: #475569;
+    }
+    
+    .money {
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .settlement-row {
+      transition: background-color 0.1s ease;
+    }
+    
+    .settlement-row:hover {
+      background-color: #f8fafc;
+    }
+    
+    .app-container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    
+    .hk-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgb(15 23 42 / 0.07), 0 2px 4px -2px rgb(15 23 42 / 0.07);
+    }
+    
+    .nav-active {
+      background-color: #ecfdf5;
+      color: #10b981;
+      font-weight: 600;
+    }
+    
+    .balance-positive {
+      background-color: #ecfdf5;
+      color: #10b981;
+    }
+    
+    .balance-negative {
+      background-color: #fef2f2;
+      color: #ef4444;
+    }
+    
+    .amount {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    
+    .empty-state {
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="app-container px-4 sm:px-6">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-x-3">
+          <div class="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-sm">
+            <i class="fa-solid fa-handshake text-white text-2xl"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">圓子基金</h1>
+            <p class="text-[10px] text-slate-500 -mt-1">朋友之間的消費記帳</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-x-2 text-sm">
+          <!-- 圓子基金餘額（全局） -->
+          <button onclick="showFundManagerModal()" 
+                  class="flex items-center gap-x-1.5 pl-3 pr-4 h-9 bg-emerald-100 hover:bg-emerald-200 active:bg-emerald-300 transition-colors rounded-2xl text-emerald-700 font-medium text-sm">
+            <i class="fa-solid fa-piggy-bank"></i>
+            <span class="hidden sm:inline text-xs">圓子基金</span>
+            <span id="fund-balance-header" class="font-bold tabular-nums">HK$0.00</span>
+          </button>
+
+          <div class="hidden sm:flex items-center gap-x-1.5 px-3 py-1.5 bg-slate-100 rounded-2xl text-slate-600">
+            <i class="fa-solid fa-mobile-screen text-xs"></i>
+            <span class="text-xs font-medium">手機友好</span>
+          </div>
+          <button onclick="showHelp()" 
+                  class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-2xl transition-colors">
+            <i class="fa-solid fa-question-circle text-lg"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-container px-4 sm:px-6 py-6">
+    
+    <!-- Activities List View -->
+    <div id="view-activities">
+      <div class="flex items-end justify-between mb-5">
+        <div>
+          <h2 class="text-2xl font-semibold tracking-tight">我的活動</h2>
+          <p class="text-slate-500 text-sm mt-0.5">選擇一個活動開始記帳</p>
+        </div>
+        <button onclick="showCreateActivityModal()" 
+                class="hidden sm:flex items-center gap-x-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 transition-all text-white px-5 h-11 rounded-2xl text-sm font-semibold shadow-sm">
+          <i class="fa-solid fa-plus"></i>
+          <span>建立新活動</span>
+        </button>
+      </div>
+
+      <!-- 圓子基金全局餘額（活動列表頁突出顯示） -->
+      <div onclick="showFundManagerModal()" 
+           class="hk-card mb-5 p-4 border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white cursor-pointer active:scale-[0.985] transition-all">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-x-2 text-emerald-600">
+              <i class="fa-solid fa-piggy-bank"></i>
+              <span class="font-semibold text-sm">圓子基金（全局）</span>
+            </div>
+            <div id="fund-balance-list" class="text-3xl font-bold tabular-nums text-emerald-700 mt-0.5">HK$0.00</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-emerald-600 font-medium">點擊管理</div>
+            <div class="text-[10px] text-emerald-500">存入 / 提取 / 結算轉入</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Activity (Mobile prominent) -->
+      <div class="sm:hidden mb-4">
+        <div class="hk-card p-4 border border-slate-100">
+          <div class="text-xs font-semibold text-slate-500 mb-2">快速建立新活動</div>
+          <div class="flex gap-2">
+            <input id="quick-create-input" type="text" placeholder="例如：唱K + 食飯" 
+                   class="flex-1 px-4 h-11 border border-slate-200 focus:border-emerald-400 rounded-2xl text-sm outline-none"
+                   onkeydown="if(event.key==='Enter') createQuickActivity()">
+            <button onclick="createQuickActivity()" 
+                    class="px-6 bg-emerald-500 text-white rounded-2xl font-semibold text-sm active:bg-emerald-600">建立</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activities Grid -->
+      <div id="activities-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- Populated by JS -->
+      </div>
+
+      <div id="activities-empty" class="hidden mt-8 text-center py-8">
+        <div class="mx-auto w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mb-4">
+          <i class="fa-solid fa-users text-3xl text-slate-400"></i>
+        </div>
+        <p class="text-slate-500">仲未有任何活動</p>
+        <button onclick="showCreateActivityModal()" 
+                class="mt-4 text-emerald-600 font-semibold text-sm flex items-center gap-1.5 mx-auto">
+          <i class="fa-solid fa-plus"></i> 建立第一個活動
+        </button>
+      </div>
+    </div>
+
+    <!-- Activity Detail View -->
+    <div id="view-detail" class="hidden">
+      <!-- Top bar -->
+      <div class="flex items-center justify-between mb-4">
+        <button onclick="backToList()" 
+                class="flex items-center gap-x-2 text-slate-600 hover:text-slate-900 font-medium text-sm px-3 py-2 -ml-3 rounded-2xl hover:bg-white active:bg-slate-100 transition-colors">
+          <i class="fa-solid fa-arrow-left text-base"></i>
+          <span>返回活動列表</span>
+        </button>
+        
+        <div class="flex items-center gap-x-2">
+          <button onclick="deleteCurrentActivity()" 
+                  class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 rounded-2xl text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors font-medium">
+            <i class="fa-solid fa-trash-can"></i>
+            <span class="hidden sm:inline">刪除活動</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Activity Name -->
+      <div class="flex items-center gap-x-3 mb-5">
+        <div id="activity-name-display" 
+             class="text-3xl font-bold tracking-tight text-slate-900 cursor-pointer hover:text-emerald-600 transition-colors"
+             onclick="editActivityName()"></div>
+        <button onclick="editActivityName()" 
+                class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-2xl transition-all">
+          <i class="fa-solid fa-pen text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Participants -->
+      <div class="hk-card p-5 mb-5 border border-slate-100">
+        <div class="flex items-center justify-between mb-3">
+          <div class="section-title flex items-center gap-2">
+            <i class="fa-solid fa-user-friends"></i>
+            <span>參加者 <span id="participant-count" class="font-mono text-xs bg-white px-1.5 py-px rounded">0</span></span>
+          </div>
+          <button onclick="clearAllExpenses()" 
+                  class="text-xs font-medium text-slate-500 hover:text-red-500 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">
+            <i class="fa-solid fa-eraser text-xs"></i>
+            <span>清空開支</span>
+          </button>
+        </div>
+        
+        <!-- Participants badges -->
+        <div id="participants-list" class="flex flex-wrap gap-2 min-h-[42px]">
+          <!-- Populated by JS -->
+        </div>
+        
+        <!-- Add participant -->
+        <div class="mt-3 flex gap-2">
+          <input id="new-participant-input" type="text" placeholder="輸入朋友名字，例如：阿華" 
+                 class="flex-1 px-4 h-10 text-sm border border-slate-200 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200 rounded-2xl outline-none"
+                 onkeydown="if(event.key==='Enter') addParticipant()">
+          <button onclick="addParticipant()" 
+                  class="px-5 bg-slate-800 hover:bg-black text-white rounded-2xl text-sm font-semibold active:scale-[0.985] transition-all">
+            加入
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-3 gap-3 mb-5">
+        <div class="hk-card px-4 py-3 border border-slate-100">
+          <div class="text-xs text-slate-500">總開支</div>
+          <div id="stat-total" class="text-2xl font-semibold tabular-nums text-slate-900 mt-0.5">HK$0</div>
+        </div>
+        <div class="hk-card px-4 py-3 border border-slate-100">
+          <div class="text-xs text-slate-500">開支筆數</div>
+          <div id="stat-count" class="text-2xl font-semibold tabular-nums text-slate-900 mt-0.5">0</div>
+        </div>
+        <div class="hk-card px-4 py-3 border border-slate-100">
+          <div class="text-xs text-slate-500">參加人數</div>
+          <div id="stat-people" class="text-2xl font-semibold tabular-nums text-slate-900 mt-0.5">0</div>
+        </div>
+      </div>
+
+      <!-- Main content: Form + List -->
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        
+        <!-- Add Expense Form -->
+        <div class="lg:col-span-2">
+          <div class="hk-card p-5 border border-slate-100">
+            <div class="section-title mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-receipt"></i>
+              <span id="expense-form-title">新增開支</span>
+            </div>
+            
+            <form id="expense-form" onsubmit="handleExpenseSubmit(event)">
+              <!-- Payer -->
+              <div class="mb-3">
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5">誰俾錢？</label>
+                <select id="payer-select" required
+                        class="w-full h-11 px-4 border border-slate-200 rounded-2xl text-sm bg-white focus:border-emerald-400 outline-none">
+                  <!-- options populated by JS -->
+                </select>
+              </div>
+              
+              <!-- Description -->
+              <div class="mb-3">
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5">項目名稱</label>
+                <input id="expense-desc" type="text" required placeholder="例如：食飯 / 唱K / 買水"
+                       class="w-full h-11 px-4 border border-slate-200 rounded-2xl text-sm focus:border-emerald-400 outline-none">
+              </div>
+              
+              <!-- Amount -->
+              <div class="mb-3">
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5">金額（HKD）</label>
+                <div class="relative">
+                  <div class="absolute left-4 top-1/2 -mt-2 text-slate-400 font-medium">$</div>
+                  <input id="expense-amount" type="number" step="0.01" min="0.01" required placeholder="0.00"
+                         class="w-full h-11 pl-8 pr-4 border border-slate-200 rounded-2xl text-sm focus:border-emerald-400 outline-none"
+                         oninput="syncFundMaxHint()">
+                </div>
+              </div>
+
+              <!-- 圓子基金支付（新增功能） -->
+              <div class="mb-3">
+                <label class="block text-xs font-semibold text-emerald-700 mb-1.5 flex items-center gap-1.5">
+                  <i class="fa-solid fa-piggy-bank"></i>
+                  <span>用圓子基金支付（選填）</span>
+                </label>
+                <div class="flex gap-2 items-center">
+                  <div class="relative flex-1">
+                    <div class="absolute left-4 top-1/2 -mt-2 text-emerald-500 font-medium">$</div>
+                    <input id="fund-paid" type="number" step="0.01" min="0" value="0"
+                           class="w-full h-11 pl-8 pr-4 border border-emerald-200 focus:border-emerald-400 rounded-2xl text-sm outline-none"
+                           oninput="syncFundMaxHint()">
+                  </div>
+                  <div id="fund-paid-hint" class="text-[10px] text-emerald-600 font-medium whitespace-nowrap min-w-[72px] text-right">餘額充足</div>
+                </div>
+                <div class="text-[10px] text-emerald-600/70 mt-0.5">基金即時扣除，剩低金額由參加者分</div>
+              </div>
+              
+              <!-- Split -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="block text-xs font-semibold text-slate-600">呢筆錢分俾邊啲人？</label>
+                  <div class="flex gap-1">
+                    <button type="button" onclick="selectAllSplit(true)"
+                            class="text-[10px] px-2.5 h-6 rounded-xl bg-emerald-100 text-emerald-700 font-medium active:bg-emerald-200">全選</button>
+                    <button type="button" onclick="selectAllSplit(false)"
+                            class="text-[10px] px-2.5 h-6 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">取消</button>
+                  </div>
+                </div>
+                
+                <div id="split-options" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-1 bg-slate-50 rounded-2xl border border-slate-100 min-h-[80px]">
+                  <!-- Checkboxes populated by JS -->
+                </div>
+              </div>
+              
+              <div class="flex gap-2 mt-4">
+                <button type="button" onclick="cancelExpenseEdit()" id="cancel-edit-btn"
+                        class="hidden flex-1 h-11 text-sm font-semibold border border-slate-200 hover:bg-slate-50 rounded-2xl active:bg-slate-100">
+                  取消
+                </button>
+                <button type="submit" id="expense-submit-btn"
+                        class="flex-1 h-11 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 transition-all text-white rounded-2xl text-sm font-bold shadow-sm">
+                  新增開支
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        
+        <!-- Expenses List -->
+        <div class="lg:col-span-3">
+          <div class="flex items-center justify-between mb-2 px-1">
+            <div class="section-title">開支記錄 <span id="expenses-count-badge" class="font-mono text-xs ml-1 text-slate-400"></span></div>
+            <button onclick="loadDemoData()" 
+                    class="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
+              <i class="fa-solid fa-magic"></i>
+              <span>載入範例</span>
+            </button>
+          </div>
+          
+          <div id="expenses-list" class="space-y-2.5 max-h-[420px] overflow-auto pr-1 custom-scroll">
+            <!-- Populated by JS -->
+          </div>
+          
+          <div id="expenses-empty" class="hidden mt-3 text-center py-8 bg-white border border-dashed border-slate-200 rounded-3xl">
+            <i class="fa-solid fa-receipt text-3xl text-slate-300"></i>
+            <p class="mt-2 text-sm text-slate-500">仲未有開支</p>
+            <p class="text-xs text-slate-400">喺左邊加入第一筆記錄</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settlement Section -->
+      <div class="mt-8">
+        <div class="flex items-center justify-between mb-3 px-1">
+          <div class="section-title text-base flex items-center gap-2">
+            <i class="fa-solid fa-balance-scale text-emerald-500"></i>
+            <span>結算結果</span>
+          </div>
+          <button onclick="copySettlement()" 
+                  class="text-xs flex items-center gap-x-1.5 px-3 h-8 rounded-2xl border border-slate-200 hover:bg-white text-slate-600 active:bg-slate-100">
+            <i class="fa-solid fa-copy"></i>
+            <span>複製結果</span>
+          </button>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Personal Balances -->
+          <div class="hk-card border border-slate-100 p-5">
+            <div class="text-sm font-semibold text-slate-700 mb-3">每人結餘</div>
+            <div id="balances-list" class="space-y-2">
+              <!-- Populated by JS -->
+            </div>
+            <div id="balances-empty" class="hidden text-sm text-slate-400 py-2">暫未有數據</div>
+          </div>
+          
+          <!-- Suggested Settlements + 圓子基金操作 -->
+          <div class="hk-card border border-slate-100 p-5">
+            <div class="text-sm font-semibold text-slate-700 mb-3">建議還款方案（最少轉帳）</div>
+            <div id="settlements-list" class="space-y-2">
+              <!-- Populated by JS -->
+            </div>
+            <div id="settlements-empty" class="hidden">
+              <div class="flex items-center gap-2 text-emerald-600 bg-emerald-50 border border-emerald-100 px-4 h-12 rounded-2xl text-sm">
+                <i class="fa-solid fa-check-circle"></i>
+                <span class="font-medium">已經結清！大家兩清啦 🎉</span>
+              </div>
+            </div>
+
+            <!-- 圓子基金模式新增：兩個結算按鈕 -->
+            <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button onclick="markAsDirectlySettled()" 
+                      class="h-10 text-sm font-semibold border border-slate-300 hover:bg-slate-50 active:bg-slate-100 rounded-2xl transition-colors flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-handshake text-xs"></i>
+                <span>完全結清（自己轉帳）</span>
+              </button>
+              <button onclick="transferSettlementToFund()" 
+                      class="h-10 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-2xl transition-all flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-piggy-bank"></i>
+                <span>轉入圓子基金</span>
+              </button>
+            </div>
+            <div class="text-[10px] text-center text-emerald-600 mt-1.5">轉入基金 = 唔使即時還錢，由共同基金承擔</div>
+          </div>
+        </div>
+        
+        <div class="text-[10px] text-center text-slate-400 mt-3">
+          資料只儲存喺你嘅瀏覽器（localStorage）。關閉頁面後仍然存在。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Activity Modal -->
+  <div id="create-modal" onclick="if (event.target.id === 'create-modal') hideCreateModal()" 
+       class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[100]">
+    <div onclick="event.stopImmediatePropagation()" 
+         class="w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+      <div class="flex justify-between items-center mb-5">
+        <div class="font-bold text-xl">建立新活動</div>
+        <button onclick="hideCreateModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-semibold mb-1.5 text-slate-600">活動名稱</label>
+        <input id="modal-activity-name" type="text" placeholder="例如：週五唱K + 食飯" 
+               class="w-full border border-slate-200 focus:border-emerald-400 h-12 rounded-2xl px-4 text-base outline-none">
+        <p class="text-xs text-slate-500 mt-1.5">之後可以隨時改名同加入朋友</p>
+      </div>
+      
+      <div class="mt-6 flex gap-3">
+        <button onclick="hideCreateModal()" 
+                class="flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+        <button onclick="createActivityFromModal()" 
+                class="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-2xl font-bold text-sm transition-all">建立活動</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 圓子基金管理 Modal -->
+  <div id="fund-modal" onclick="if (event.target.id === 'fund-modal') hideFundManagerModal()" 
+       class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[110]">
+    <div onclick="event.stopImmediatePropagation()" 
+         class="w-full sm:w-[460px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+      
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-piggy-bank text-emerald-500 text-xl"></i>
+            <div class="font-bold text-xl">圓子基金</div>
+          </div>
+          <div class="text-xs text-emerald-600">全局共同錢包，所有活動共享</div>
+        </div>
+        <button onclick="hideFundManagerModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+      </div>
+
+      <!-- Big Balance -->
+      <div class="hk-card bg-emerald-50 border-emerald-100 p-5 mb-5 text-center">
+        <div class="text-xs font-semibold text-emerald-600 tracking-wider">目前餘額</div>
+        <div id="fund-modal-balance" class="text-4xl font-bold tabular-nums text-emerald-700 mt-1">HK$0.00</div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <!-- 存入 (綠色系) -->
+        <div>
+          <div class="text-sm font-semibold text-emerald-700 mb-2 flex items-center gap-1">
+            <i class="fa-solid fa-arrow-down"></i> 存入基金
+          </div>
+
+          <!-- 輸入框 - 獨立全寬，與提取側一致 -->
+          <div class="mb-3">
+            <div class="relative">
+              <div class="absolute left-3 top-1/2 -mt-2 text-emerald-500">$</div>
+              <input id="fund-deposit-input" type="number" step="0.01" min="0" placeholder="輸入金額" 
+                     class="w-full h-11 pl-8 pr-4 border border-emerald-200 focus:border-emerald-400 rounded-2xl text-base outline-none">
+            </div>
+          </div>
+
+          <!-- 快速按鈕 - 一行排列，與提取側一致 -->
+          <div class="grid grid-cols-4 gap-2 mb-4">
+            <button onclick="quickAdjustFund(50)" 
+                    class="py-2 text-sm border border-emerald-200 bg-white text-emerald-600 rounded-2xl active:bg-emerald-50 hover:bg-emerald-50 transition-colors">
+              +50
+            </button>
+            <button onclick="quickAdjustFund(100)" 
+                    class="py-2 text-sm border border-emerald-200 bg-white text-emerald-600 rounded-2xl active:bg-emerald-50 hover:bg-emerald-50 transition-colors">
+              +100
+            </button>
+            <button onclick="quickAdjustFund(200)" 
+                    class="py-2 text-sm border border-emerald-200 bg-white text-emerald-600 rounded-2xl active:bg-emerald-50 hover:bg-emerald-50 transition-colors">
+              +200
+            </button>
+            <button onclick="quickAdjustFund(500)" 
+                    class="py-2 text-sm border border-emerald-200 bg-white text-emerald-600 rounded-2xl active:bg-emerald-50 hover:bg-emerald-50 transition-colors">
+              +500
+            </button>
+          </div>
+
+          <!-- 大綠色「存入」按鈕 - 全寬、與提取側同高度 -->
+          <button onclick="depositFromInput()" 
+                  class="w-full h-12 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-2xl text-sm font-bold shadow-sm transition-all">
+            存入
+          </button>
+        </div>
+
+        <!-- 提取 (紅色系，還原對比) -->
+        <div>
+          <div class="text-sm font-semibold text-rose-600 mb-2 flex items-center gap-1">
+            <i class="fa-solid fa-arrow-up"></i> 提取基金
+          </div>
+
+          <!-- 輸入框 - 獨立全寬，與存入側一致 -->
+          <div class="mb-3">
+            <div class="relative">
+              <div class="absolute left-3 top-1/2 -mt-2 text-rose-500">$</div>
+              <input id="fund-withdraw-input" type="number" step="0.01" min="0" placeholder="輸入金額" 
+                     class="w-full h-11 pl-8 pr-4 border border-rose-200 focus:border-rose-400 rounded-2xl text-base outline-none">
+            </div>
+          </div>
+
+          <!-- 快速按鈕 - 一行排列，與存入側一致 -->
+          <div class="grid grid-cols-3 gap-2 mb-4">
+            <button onclick="quickAdjustFund(-50)" 
+                    class="py-2 text-sm border border-rose-200 bg-white text-rose-600 rounded-2xl active:bg-rose-50 hover:bg-rose-50 transition-colors">
+              -50
+            </button>
+            <button onclick="quickAdjustFund(-100)" 
+                    class="py-2 text-sm border border-rose-200 bg-white text-rose-600 rounded-2xl active:bg-rose-50 hover:bg-rose-50 transition-colors">
+              -100
+            </button>
+            <button onclick="quickAdjustFund(-200)" 
+                    class="py-2 text-sm border border-rose-200 bg-white text-rose-600 rounded-2xl active:bg-rose-50 hover:bg-rose-50 transition-colors">
+              -200
+            </button>
+          </div>
+
+          <!-- 大紅色「提取」按鈕 - 全寬、與存入側同高度 -->
+          <button onclick="withdrawFromInput()" 
+                  class="w-full h-12 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-2xl text-sm font-bold shadow-sm transition-all">
+            提取
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-5 text-[10px] text-center text-slate-400 leading-tight">
+        基金可以用嚟墊支開支、儲低結算錢，或大家決定留低嘅共同儲備。
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 items-center"></div>
+
+  <script>
+    // ==================== State ====================
+    let activities = [];
+    let currentActivityId = null;
+    let editingExpenseId = null;
+
+    // 圓子基金（全局）
+    let fundBalance = 0;
+    const STORAGE_KEY = 'yuenzifund_activities';
+    const FUND_KEY = 'yuenzifund_fund_balance';
+
+    // ==================== Storage ====================
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) activities = JSON.parse(raw);
+      } catch (e) {
+        console.warn('Failed to load from storage', e);
+        activities = [];
+      }
+    }
+
+    function saveToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(activities));
+      } catch (e) {
+        console.warn('Failed to save to storage', e);
+      }
+    }
+
+    // ==================== 圓子基金（全局） ====================
+    function loadFundBalance() {
+      try {
+        const raw = localStorage.getItem(FUND_KEY);
+        fundBalance = raw ? parseFloat(raw) || 0 : 0;
+      } catch (e) {
+        fundBalance = 0;
+      }
+    }
+
+    function saveFundBalance() {
+      try {
+        localStorage.setItem(FUND_KEY, fundBalance.toFixed(2));
+      } catch (e) {
+        console.warn('Failed to save fund balance', e);
+      }
+    }
+
+    function updateFundDisplays() {
+      const formatted = formatMoney(fundBalance);
+      // Header pill
+      const headerVal = document.getElementById('fund-balance-header');
+      if (headerVal) headerVal.textContent = formatted;
+      // Activities list prominent display
+      const listVal = document.getElementById('fund-balance-list');
+      if (listVal) listVal.textContent = formatted;
+      // Modal (if open)
+      const modalVal = document.getElementById('fund-modal-balance');
+      if (modalVal) modalVal.textContent = formatted;
+    }
+
+    function showFundManagerModal() {
+      const modal = document.getElementById('fund-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      updateFundDisplays();
+      // focus first input
+      setTimeout(() => {
+        const depositInput = document.getElementById('fund-deposit-input');
+        if (depositInput) depositInput.focus();
+      }, 80);
+    }
+
+    function hideFundManagerModal() {
+      const modal = document.getElementById('fund-modal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function adjustFund(amount, type) {
+      const before = fundBalance;
+      if (type === 'deposit') {
+        fundBalance += amount;
+      } else {
+        if (amount > fundBalance + 0.005) {
+          showToast('基金餘額唔夠提取', 'error');
+          return;
+        }
+        fundBalance -= amount;
+      }
+      if (fundBalance < 0) fundBalance = 0;
+      saveFundBalance();
+      updateFundDisplays();
+      showToast(`${type === 'deposit' ? '已存入' : '已提取'} ${formatMoney(amount)}`);
+    }
+
+    function quickAdjustFund(delta) {
+      if (delta > 0) {
+        adjustFund(delta, 'deposit');
+      } else {
+        adjustFund(-delta, 'withdraw');
+      }
+    }
+
+    function depositFromInput() {
+      const input = document.getElementById('fund-deposit-input');
+      const val = parseFloat(input.value);
+      if (!val || val <= 0) {
+        showToast('請輸入有效金額', 'error');
+        return;
+      }
+      adjustFund(val, 'deposit');
+      input.value = '';
+    }
+
+    function withdrawFromInput() {
+      const input = document.getElementById('fund-withdraw-input');
+      const val = parseFloat(input.value);
+      if (!val || val <= 0) {
+        showToast('請輸入有效金額', 'error');
+        return;
+      }
+      adjustFund(val, 'withdraw');
+      input.value = '';
+    }
+
+    // ==================== Helpers ====================
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const colors = type === 'error' 
+        ? 'bg-red-600 text-white' 
+        : 'bg-slate-900 text-white';
+      
+      const toast = document.createElement('div');
+      toast.className = `${colors} px-5 py-3 rounded-2xl shadow-lg flex items-center gap-2 text-sm font-medium animate-[fadeIn_0.1s]`;
+      toast.innerHTML = `
+        <span>${message}</span>
+      `;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.transition = 'all 0.2s ease';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 180);
+      }, 2400);
+    }
+
+    function formatMoney(amount) {
+      const n = Number(amount) || 0;
+      return 'HK$' + n.toLocaleString('en-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function getCurrentActivity() {
+      return activities.find(a => a.id === currentActivityId);
+    }
+
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    // ==================== View Switching ====================
+    function showActivitiesView() {
+      document.getElementById('view-activities').classList.remove('hidden');
+      document.getElementById('view-detail').classList.add('hidden');
+      renderActivitiesList();
+    }
+
+    function showDetailView() {
+      document.getElementById('view-activities').classList.add('hidden');
+      document.getElementById('view-detail').classList.remove('hidden');
+      renderDetail();
+    }
+
+    function backToList() {
+      currentActivityId = null;
+      editingExpenseId = null;
+      showActivitiesView();
+    }
+
+    // ==================== Activities List ====================
+    function renderActivitiesList() {
+      const grid = document.getElementById('activities-grid');
+      const empty = document.getElementById('activities-empty');
+      
+      grid.innerHTML = '';
+      
+      if (activities.length === 0) {
+        empty.classList.remove('hidden');
+        grid.classList.add('hidden');
+        return;
+      }
+      
+      empty.classList.add('hidden');
+      grid.classList.remove('hidden');
+      
+      activities
+        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+        .forEach(activity => {
+          const total = activity.expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          const people = new Set();
+          activity.expenses.forEach(e => {
+            people.add(e.payer);
+            e.splitWith.forEach(p => people.add(p));
+          });
+          activity.participants.forEach(p => people.add(p));
+          
+          const card = document.createElement('div');
+          card.className = 'hk-card border border-slate-100 p-4 cursor-pointer active:scale-[0.985] transition-all hover:border-emerald-200';
+          card.onclick = () => selectActivity(activity.id);
+          
+          card.innerHTML = `
+            <div class="flex justify-between items-start">
+              <div class="font-semibold text-lg leading-tight pr-3">${escapeHtml(activity.name)}</div>
+              <button onclick="event.stopImmediatePropagation(); deleteActivity('${activity.id}');" 
+                      class="w-8 h-8 -mr-1 -mt-1 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl">
+                <i class="fa-solid fa-trash text-xs"></i>
+              </button>
+            </div>
+            
+            <div class="mt-4 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-4">
+                <div class="flex items-center gap-1 text-slate-500">
+                  <i class="fa-solid fa-users text-emerald-400"></i>
+                  <span class="font-medium">${activity.participants.length}</span>
+                </div>
+                <div class="flex items-center gap-1 text-slate-500">
+                  <i class="fa-solid fa-receipt text-emerald-400"></i>
+                  <span class="font-medium">${activity.expenses.length}</span>
+                </div>
+              </div>
+              <div class="font-semibold tabular-nums text-emerald-600">${formatMoney(total)}</div>
+            </div>
+            
+            <div class="mt-3 text-[10px] text-slate-400">
+              ${activity.expenses.length > 0 ? '最後更新：' + new Date(activity.updatedAt || Date.now()).toLocaleDateString('zh-HK') : '未有開支'}
+            </div>
+          `;
+          
+          grid.appendChild(card);
+        });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, s => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[s]));
+    }
+
+    function createQuickActivity() {
+      const input = document.getElementById('quick-create-input');
+      const name = input.value.trim() || '新活動';
+      createNewActivity(name);
+      input.value = '';
+    }
+
+    function showCreateActivityModal() {
+      const modal = document.getElementById('create-modal');
+      const input = document.getElementById('modal-activity-name');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      input.value = '';
+      setTimeout(() => input.focus(), 80);
+    }
+
+    function hideCreateModal() {
+      const modal = document.getElementById('create-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+    }
+
+    function createActivityFromModal() {
+      const input = document.getElementById('modal-activity-name');
+      const name = input.value.trim() || '新活動';
+      hideCreateModal();
+      createNewActivity(name);
+    }
+
+    function createNewActivity(name) {
+      const newAct = {
+        id: generateId(),
+        name: name,
+        participants: [],
+        expenses: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      activities.unshift(newAct);
+      saveToStorage();
+      selectActivity(newAct.id);
+      showToast('新活動已建立');
+    }
+
+    function selectActivity(id) {
+      currentActivityId = id;
+      editingExpenseId = null;
+      showDetailView();
+    }
+
+    function deleteActivity(id) {
+      if (!confirm('確定要刪除呢個活動？所有開支記錄都會消失。')) return;
+      
+      activities = activities.filter(a => a.id !== id);
+      saveToStorage();
+      
+      if (currentActivityId === id) {
+        currentActivityId = null;
+        showActivitiesView();
+      } else {
+        renderActivitiesList();
+      }
+      showToast('活動已刪除');
+    }
+
+    function deleteCurrentActivity() {
+      if (!currentActivityId) return;
+      if (!confirm('確定刪除整個活動？')) return;
+      
+      activities = activities.filter(a => a.id !== currentActivityId);
+      saveToStorage();
+      currentActivityId = null;
+      showActivitiesView();
+      showToast('活動已刪除');
+    }
+
+    function editActivityName() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const newName = prompt('輸入新活動名稱：', act.name);
+      if (newName === null) return;
+      
+      const trimmed = newName.trim();
+      if (!trimmed) return;
+      
+      act.name = trimmed;
+      act.updatedAt = Date.now();
+      saveToStorage();
+      renderDetail();
+    }
+
+    // ==================== Participants ====================
+    function renderParticipants() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const container = document.getElementById('participants-list');
+      const countEl = document.getElementById('participant-count');
+      
+      container.innerHTML = '';
+      countEl.textContent = act.participants.length;
+      
+      if (act.participants.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'text-xs text-slate-400 italic px-1';
+        empty.textContent = '未有參加者，請喺下面加入朋友';
+        container.appendChild(empty);
+        return;
+      }
+      
+      act.participants.forEach(name => {
+        const badge = document.createElement('div');
+        badge.className = 'participant-badge inline-flex items-center gap-1.5 pl-3.5 pr-2 py-1 bg-emerald-100 text-emerald-700 rounded-2xl text-sm font-medium';
+        badge.innerHTML = `
+          <span>${escapeHtml(name)}</span>
+          <button class="w-5 h-5 flex items-center justify-center hover:bg-emerald-200 rounded-xl text-emerald-600" 
+                  onclick="event.stopImmediatePropagation(); removeParticipant('${escapeHtml(name)}')">
+            <i class="fa-solid fa-times text-xs"></i>
+          </button>
+        `;
+        container.appendChild(badge);
+      });
+    }
+
+    function addParticipant() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const input = document.getElementById('new-participant-input');
+      const name = input.value.trim();
+      
+      if (!name) {
+        showToast('請輸入朋友名字', 'error');
+        return;
+      }
+      
+      if (act.participants.includes(name)) {
+        showToast('呢個朋友已經喺名單入面', 'error');
+        return;
+      }
+      
+      act.participants.push(name);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      
+      input.value = '';
+      renderParticipants();
+      renderPayerOptions();
+      renderSplitOptions();
+      renderStats();
+      showToast(`已加入 ${name}`);
+    }
+
+    function removeParticipant(name) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      // Check if this person is involved in any expense
+      const involved = act.expenses.some(e => 
+        e.payer === name || e.splitWith.includes(name)
+      );
+      
+      if (involved) {
+        if (!confirm(`「${name}」有開支記錄，移除後歷史數據仍然會計算。確定移除？`)) return;
+      }
+      
+      act.participants = act.participants.filter(p => p !== name);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      
+      renderParticipants();
+      renderPayerOptions();
+      renderSplitOptions();
+      renderDetail(); // full refresh to update balances
+    }
+
+    // ==================== Expense Form ====================
+    function renderPayerOptions() {
+      const act = getCurrentActivity();
+      const select = document.getElementById('payer-select');
+      if (!act || !select) return;
+      
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">— 選擇俾錢人 —</option>';
+      
+      act.participants.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+      
+      // try restore previous selection if still valid
+      if (currentValue && act.participants.includes(currentValue)) {
+        select.value = currentValue;
+      }
+    }
+
+    function renderSplitOptions(selectedNames = null) {
+      const act = getCurrentActivity();
+      const container = document.getElementById('split-options');
+      if (!act || !container) return;
+      
+      container.innerHTML = '';
+      
+      if (act.participants.length === 0) {
+        const msg = document.createElement('div');
+        msg.className = 'col-span-full px-3 py-2 text-xs text-slate-500 italic';
+        msg.textContent = '請先加入參加者';
+        container.appendChild(msg);
+        return;
+      }
+      
+      const toSelect = selectedNames || [...act.participants];
+      
+      act.participants.forEach(name => {
+        const isChecked = toSelect.includes(name);
+        
+        const wrapper = document.createElement('label');
+        wrapper.className = `flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border ${isChecked ? 'bg-white border-emerald-300' : 'bg-white border-transparent hover:bg-slate-100'} transition-colors`;
+        
+        wrapper.innerHTML = `
+          <input type="checkbox" value="${escapeHtml(name)}" ${isChecked ? 'checked' : ''} 
+                 class="w-4 h-4 accent-emerald-500 pointer-events-none">
+          <span class="text-sm font-medium select-none">${escapeHtml(name)}</span>
+        `;
+        
+        // Make whole label toggle the checkbox
+        wrapper.onclick = (e) => {
+          if (e.target.tagName === 'INPUT') return;
+          const cb = wrapper.querySelector('input');
+          cb.checked = !cb.checked;
+          wrapper.classList.toggle('border-emerald-300', cb.checked);
+          wrapper.classList.toggle('bg-white', cb.checked);
+        };
+        
+        const cb = wrapper.querySelector('input');
+        cb.onchange = () => {
+          wrapper.classList.toggle('border-emerald-300', cb.checked);
+          wrapper.classList.toggle('bg-white', cb.checked);
+        };
+        
+        container.appendChild(wrapper);
+      });
+    }
+
+    function selectAllSplit(checked) {
+      const container = document.getElementById('split-options');
+      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(cb => {
+        cb.checked = checked;
+        const label = cb.closest('label');
+        if (label) {
+          label.classList.toggle('border-emerald-300', checked);
+          label.classList.toggle('bg-white', checked);
+        }
+      });
+    }
+
+    function getSelectedSplit() {
+      const container = document.getElementById('split-options');
+      const checked = [];
+      container.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+        checked.push(cb.value);
+      });
+      return checked;
+    }
+
+    // 圓子基金支付提示同步（即時驗證）
+    function syncFundMaxHint() {
+      const amountInput = document.getElementById('expense-amount');
+      const fundInput = document.getElementById('fund-paid');
+      const hint = document.getElementById('fund-paid-hint');
+      if (!amountInput || !fundInput || !hint) return;
+
+      const amount = parseFloat(amountInput.value) || 0;
+      const fundPaid = parseFloat(fundInput.value) || 0;
+
+      let msg = '';
+      let color = 'text-emerald-600';
+
+      if (fundPaid > amount) {
+        msg = '不可超過金額';
+        color = 'text-red-500';
+      } else if (fundPaid > fundBalance + 0.005) {
+        msg = '基金餘額唔夠';
+        color = 'text-red-500';
+      } else if (fundPaid > 0) {
+        msg = '基金可用';
+        color = 'text-emerald-600';
+      } else {
+        msg = '餘額充足';
+      }
+
+      hint.textContent = msg;
+      hint.className = `text-[10px] font-medium whitespace-nowrap min-w-[72px] text-right ${color}`;
+    }
+
+    function handleExpenseSubmit(e) {
+      e.preventDefault();
+      
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const payer = document.getElementById('payer-select').value;
+      const desc = document.getElementById('expense-desc').value.trim();
+      const amountStr = document.getElementById('expense-amount').value;
+      const splitWith = getSelectedSplit();
+      
+      if (!payer) {
+        showToast('請選擇誰俾錢', 'error');
+        return;
+      }
+      if (!desc) {
+        showToast('請輸入項目名稱', 'error');
+        return;
+      }
+      const amount = parseFloat(amountStr);
+      if (!amount || amount <= 0) {
+        showToast('請輸入有效金額', 'error');
+        return;
+      }
+      if (splitWith.length === 0) {
+        showToast('請至少選擇一個分錢的人', 'error');
+        return;
+      }
+      
+      // 圓子基金支付金額（核心新功能）
+      let fundPaid = parseFloat(document.getElementById('fund-paid').value) || 0;
+      fundPaid = Math.max(0, Math.min(fundPaid, amount, fundBalance)); // 不可超過金額或基金餘額
+      
+      if (editingExpenseId) {
+        // Update existing
+        const exp = act.expenses.find(x => x.id === editingExpenseId);
+        if (exp) {
+          const oldFundPaid = Number(exp.fundPaid) || 0;
+          exp.payer = payer;
+          exp.description = desc;
+          exp.amount = amount;
+          exp.splitWith = splitWith;
+          exp.fundPaid = fundPaid;
+          
+          // 調整全局基金（編輯時的差額）
+          const delta = oldFundPaid - fundPaid;
+          fundBalance += delta;
+          if (fundBalance < 0) fundBalance = 0;
+          saveFundBalance();
+          updateFundDisplays();
+        }
+        showToast('開支已更新');
+      } else {
+        // Add new
+        act.expenses.unshift({
+          id: generateId(),
+          payer,
+          description: desc,
+          amount,
+          splitWith,
+          fundPaid: fundPaid,
+          createdAt: Date.now()
+        });
+        
+        // 即時扣減基金餘額
+        if (fundPaid > 0) {
+          fundBalance -= fundPaid;
+          if (fundBalance < 0) fundBalance = 0;
+          saveFundBalance();
+          updateFundDisplays();
+        }
+        showToast('開支已新增' + (fundPaid > 0 ? `（基金已支付 ${formatMoney(fundPaid)}）` : ''));
+      }
+      
+      act.updatedAt = Date.now();
+      saveToStorage();
+      
+      // Reset form
+      cancelExpenseEdit();
+      renderDetail();
+    }
+
+    function editExpense(id) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const exp = act.expenses.find(e => e.id === id);
+      if (!exp) return;
+      
+      editingExpenseId = id;
+      
+      // Populate form
+      document.getElementById('payer-select').value = exp.payer;
+      document.getElementById('expense-desc').value = exp.description;
+      document.getElementById('expense-amount').value = exp.amount;
+      document.getElementById('fund-paid').value = Number(exp.fundPaid) || 0;
+      
+      // Render split with saved values
+      renderSplitOptions(exp.splitWith);
+      syncFundMaxHint(); // 更新基金提示
+      
+      // Update UI
+      document.getElementById('expense-form-title').textContent = '編輯開支';
+      document.getElementById('expense-submit-btn').textContent = '更新開支';
+      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+      
+      // Scroll to form
+      document.getElementById('expense-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cancelExpenseEdit() {
+      editingExpenseId = null;
+      
+      document.getElementById('expense-form').reset();
+      // 重置基金支付欄為 0
+      const fundInput = document.getElementById('fund-paid');
+      if (fundInput) fundInput.value = '0';
+      
+      document.getElementById('expense-form-title').textContent = '新增開支';
+      document.getElementById('expense-submit-btn').textContent = '新增開支';
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
+      
+      const act = getCurrentActivity();
+      if (act) {
+        renderSplitOptions(); // reset to all checked
+      }
+      syncFundMaxHint();
+    }
+
+    function deleteExpense(id) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      if (!confirm('確定刪除這筆開支？')) return;
+      
+      act.expenses = act.expenses.filter(e => e.id !== id);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      
+      if (editingExpenseId === id) {
+        cancelExpenseEdit();
+      }
+      
+      renderDetail();
+      showToast('開支已刪除');
+    }
+
+    function clearAllExpenses() {
+      const act = getCurrentActivity();
+      if (!act || act.expenses.length === 0) return;
+      
+      if (!confirm(`確定清空所有 ${act.expenses.length} 筆開支？`)) return;
+      
+      act.expenses = [];
+      act.updatedAt = Date.now();
+      saveToStorage();
+      cancelExpenseEdit();
+      renderDetail();
+      showToast('已清空所有開支');
+    }
+
+    // ==================== Rendering Expenses ====================
+    function renderExpenses() {
+      const act = getCurrentActivity();
+      const list = document.getElementById('expenses-list');
+      const empty = document.getElementById('expenses-empty');
+      const badge = document.getElementById('expenses-count-badge');
+      
+      if (!act) return;
+      
+      list.innerHTML = '';
+      
+      badge.textContent = act.expenses.length > 0 ? `(${act.expenses.length})` : '';
+      
+      if (act.expenses.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      
+      act.expenses.forEach(exp => {
+        const share = exp.splitWith.length > 0 ? (exp.amount / exp.splitWith.length) : 0;
+        
+        const card = document.createElement('div');
+        card.className = 'expense-card hk-card border border-slate-100 p-3.5 flex gap-3 items-start';
+        
+        card.innerHTML = `
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-base leading-tight">${escapeHtml(exp.description)}</div>
+            
+            <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+              <div class="inline-flex items-center px-2.5 py-0.5 bg-amber-100 text-amber-700 rounded-xl font-medium">
+                <i class="fa-solid fa-user mr-1.5 text-amber-500"></i>
+                <span>${escapeHtml(exp.payer)} 俾</span>
+              </div>
+              
+              <div class="text-emerald-600 font-medium tabular-nums">
+                ${formatMoney(exp.amount)}
+              </div>
+              ${exp.fundPaid > 0.005 ? `
+              <div class="inline-flex items-center px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-xl text-[10px] font-medium">
+                <i class="fa-solid fa-piggy-bank mr-1"></i>
+                <span>基金 ${formatMoney(exp.fundPaid)}</span>
+              </div>` : ''}
+            </div>
+            
+            <div class="mt-1.5 text-xs text-slate-500">
+              分 ${exp.splitWith.length} 人（每人約 <span class="font-medium tabular-nums">${formatMoney(share)}</span>）
+              <span class="text-slate-400">• ${exp.splitWith.map(escapeHtml).join('、')}</span>
+            </div>
+          </div>
+          
+          <div class="flex flex-col gap-1 items-end pt-0.5 shrink-0">
+            <button onclick="editExpense('${exp.id}')" 
+                    class="w-8 h-8 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 rounded-xl">
+              <i class="fa-solid fa-pen text-xs"></i>
+            </button>
+            <button onclick="deleteExpense('${exp.id}')" 
+                    class="w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-500 rounded-xl">
+              <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+          </div>
+        `;
+        
+        list.appendChild(card);
+      });
+    }
+
+    // ==================== Settlement Logic ====================
+    function computeBalances(act) {
+      const balances = {};
+      const allPeople = new Set(act.participants);
+      
+      act.expenses.forEach(e => {
+        allPeople.add(e.payer);
+        e.splitWith.forEach(p => allPeople.add(p));
+      });
+      
+      allPeople.forEach(p => balances[p] = 0);
+      
+      act.expenses.forEach(exp => {
+        if (!exp.splitWith || exp.splitWith.length === 0) return;
+        
+        const fundPaid = Number(exp.fundPaid) || 0;
+        const amountToSplit = Math.max(0, exp.amount - fundPaid);
+        
+        if (amountToSplit <= 0.005) return; // 基金全額支付，無需人與人之間結算
+        
+        const share = amountToSplit / exp.splitWith.length;
+        
+        exp.splitWith.forEach(p => {
+          balances[p] = (balances[p] || 0) - share;
+        });
+        balances[exp.payer] = (balances[exp.payer] || 0) + amountToSplit;
+      });
+      
+      // Round to cents
+      Object.keys(balances).forEach(k => {
+        balances[k] = Math.round(balances[k] * 100) / 100;
+      });
+      
+      return balances;
+    }
+
+    function computeSettlements(balances) {
+      const debtors = [];
+      const creditors = [];
+      
+      Object.entries(balances).forEach(([name, val]) => {
+        if (val < -0.005) debtors.push({ name, amount: -val });
+        else if (val > 0.005) creditors.push({ name, amount: val });
+      });
+      
+      debtors.sort((a, b) => b.amount - a.amount);
+      creditors.sort((a, b) => b.amount - a.amount);
+      
+      const settlements = [];
+      let i = 0, j = 0;
+      
+      while (i < debtors.length && j < creditors.length) {
+        const d = debtors[i];
+        const c = creditors[j];
+        const amt = Math.min(d.amount, c.amount);
+        
+        if (amt > 0.005) {
+          settlements.push({
+            from: d.name,
+            to: c.name,
+            amount: Math.round(amt * 100) / 100
+          });
+        }
+        
+        d.amount -= amt;
+        c.amount -= amt;
+        
+        if (d.amount < 0.005) i++;
+        if (c.amount < 0.005) j++;
+      }
+      
+      return settlements;
+    }
+
+    function renderBalances(balances) {
+      const container = document.getElementById('balances-list');
+      const empty = document.getElementById('balances-empty');
+      
+      container.innerHTML = '';
+      
+      const entries = Object.entries(balances);
+      if (entries.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      
+      // Sort: positive first (to receive), then negative
+      entries.sort((a, b) => b[1] - a[1]);
+      
+      entries.forEach(([name, val]) => {
+        const abs = Math.abs(val);
+        if (abs < 0.01) {
+          // Show as settled
+          const row = document.createElement('div');
+          row.className = `flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-100`;
+          row.innerHTML = `
+            <div class="font-medium">${escapeHtml(name)}</div>
+            <div class="text-right">
+              <div class="font-semibold tabular-nums text-slate-500">${formatMoney(0)}</div>
+              <div class="text-[10px] -mt-0.5 text-slate-400">已兩清</div>
+            </div>
+          `;
+          container.appendChild(row);
+          return;
+        }
+        const isPositive = val >= 0.005;
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between px-3 py-2 rounded-2xl ${isPositive ? 'balance-positive' : 'balance-negative'}`;
+        
+        row.innerHTML = `
+          <div class="font-medium">${escapeHtml(name)}</div>
+          <div class="text-right">
+            <div class="font-semibold tabular-nums ${isPositive ? 'text-emerald-700' : 'text-red-600'}">
+              ${isPositive ? '+' : ''}${formatMoney(abs)}
+            </div>
+            <div class="text-[10px] -mt-0.5 ${isPositive ? 'text-emerald-600' : 'text-red-500'}">
+              ${isPositive ? '應收' : '應俾'}
+            </div>
+          </div>
+        `;
+        
+        container.appendChild(row);
+      });
+    }
+
+    function renderSettlements(settlements) {
+      const container = document.getElementById('settlements-list');
+      const empty = document.getElementById('settlements-empty');
+      
+      container.innerHTML = '';
+      
+      if (settlements.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      
+      settlements.forEach((s, idx) => {
+        const row = document.createElement('div');
+        row.className = `settlement-row flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-slate-100`;
+        
+        row.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <span class="font-semibold text-red-600 shrink-0">${escapeHtml(s.from)}</span>
+            <span class="text-slate-400 text-sm px-1">要俾</span>
+            <span class="font-semibold text-emerald-700 shrink-0">${escapeHtml(s.to)}</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="font-bold tabular-nums text-lg text-slate-800">${formatMoney(s.amount)}</div>
+            <button onclick="copySingleSettlement(${idx})" 
+                    class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg">
+              <i class="fa-solid fa-copy text-xs"></i>
+            </button>
+          </div>
+        `;
+        
+        container.appendChild(row);
+      });
+    }
+
+    function renderSettlement() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const balances = computeBalances(act);
+      const settlements = computeSettlements(balances);
+      
+      renderBalances(balances);
+      renderSettlements(settlements);
+    }
+
+    // ==================== Main Detail Render ====================
+    function renderDetail() {
+      const act = getCurrentActivity();
+      if (!act) {
+        backToList();
+        return;
+      }
+      
+      // Header name
+      document.getElementById('activity-name-display').textContent = act.name;
+      
+      // Participants + form options
+      renderParticipants();
+      renderPayerOptions();
+      
+      // If not editing, default split to all
+      if (!editingExpenseId) {
+        renderSplitOptions();
+      }
+      
+      // Stats
+      renderStats();
+      
+      // Expenses
+      renderExpenses();
+      
+      // Settlement
+      renderSettlement();
+      
+      // 確保基金支付提示正確
+      syncFundMaxHint();
+    }
+
+    function renderStats() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const total = act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      const peopleSet = new Set(act.participants);
+      act.expenses.forEach(e => {
+        peopleSet.add(e.payer);
+        e.splitWith.forEach(p => peopleSet.add(p));
+      });
+      
+      document.getElementById('stat-total').textContent = formatMoney(total);
+      document.getElementById('stat-count').textContent = act.expenses.length;
+      document.getElementById('stat-people').textContent = peopleSet.size;
+    }
+
+    // ==================== Settlement Copy ====================
+    function copySettlement() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const balances = computeBalances(act);
+      const settlements = computeSettlements(balances);
+      
+      let text = `圓子基金 — ${act.name}\n`;
+      text += `參加者：${act.participants.join('、')}\n`;
+      text += `總開支：${formatMoney(act.expenses.reduce((s,e)=>s+e.amount,0))}\n\n`;
+      
+      text += '【每人結餘】\n';
+      Object.entries(balances).sort((a,b)=>b[1]-a[1]).forEach(([n,v]) => {
+        const sign = v >= 0 ? '應收' : '應俾';
+        text += `${n}：${sign} ${formatMoney(Math.abs(v))}\n`;
+      });
+      
+      if (settlements.length > 0) {
+        text += '\n【建議還款】\n';
+        settlements.forEach(s => {
+          text += `${s.from} 要俾 ${s.to} ${formatMoney(s.amount)}\n`;
+        });
+      } else {
+        text += '\n✅ 已經結清！\n';
+      }
+      
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('結算結果已複製到剪貼簿');
+      }).catch(() => {
+        prompt('請手動複製以下內容：', text);
+      });
+    }
+
+    function copySingleSettlement(idx) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      const settlements = computeSettlements(computeBalances(act));
+      const s = settlements[idx];
+      if (!s) return;
+      
+      const text = `${s.from} 要俾 ${s.to} ${formatMoney(s.amount)}`;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('已複製這筆還款');
+      }).catch(() => alert(text));
+    }
+
+    // ==================== 圓子基金模式 - 結算操作 ====================
+    function markAsDirectlySettled() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      const settlements = computeSettlements(computeBalances(act));
+      if (settlements.length === 0) {
+        showToast('已經結清，無需額外操作');
+        return;
+      }
+      showToast('已記錄為「完全結清」— 請大家自行轉帳');
+      // 這裡可以之後加「已結清」標記，現階段只給提示
+    }
+
+    function transferSettlementToFund() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const balances = computeBalances(act);
+      const settlements = computeSettlements(balances);
+      
+      const total = settlements.reduce((sum, s) => sum + s.amount, 0);
+      
+      if (total < 0.01) {
+        showToast('已經結清，無需轉入基金');
+        return;
+      }
+      
+      // 核心動作：將本次結算總額轉入全局圓子基金
+      fundBalance += total;
+      saveFundBalance();
+      updateFundDisplays();
+      
+      showToast(`已轉入圓子基金 ${formatMoney(total)}！`);
+      
+      // 重新渲染結算區，方便用戶即時看到變化
+      renderSettlement();
+      
+      // 額外提示
+      setTimeout(() => {
+        showToast('大家而家可以安心，基金已經承擔咗呢個活動嘅結餘');
+      }, 1800);
+    }
+
+    // ==================== Demo Data ====================
+    function loadDemoData() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      if (act.expenses.length > 0) {
+        if (!confirm('載入範例會清空現有開支，確定繼續？')) return;
+      }
+      
+      act.participants = ['阿明', '阿華', '小美', '志偉'];
+      
+      act.expenses = [
+        {
+          id: generateId(),
+          payer: '阿明',
+          description: '食飯（4人）',
+          amount: 328,
+          splitWith: ['阿明', '阿華', '小美', '志偉'],
+          createdAt: Date.now() - 100000
+        },
+        {
+          id: generateId(),
+          payer: '阿華',
+          description: '唱K 2小時',
+          amount: 480,
+          splitWith: ['阿明', '阿華', '小美', '志偉'],
+          createdAt: Date.now() - 80000
+        },
+        {
+          id: generateId(),
+          payer: '小美',
+          description: '買水 + 零食',
+          amount: 68,
+          splitWith: ['阿明', '阿華', '小美'],
+          createdAt: Date.now() - 60000
+        },
+        {
+          id: generateId(),
+          payer: '志偉',
+          description: '的士車錢',
+          amount: 95,
+          splitWith: ['阿明', '阿華', '小美', '志偉'],
+          createdAt: Date.now() - 30000
+        }
+      ];
+      
+      act.updatedAt = Date.now();
+      saveToStorage();
+      
+      editingExpenseId = null;
+      renderDetail();
+      showToast('範例數據已載入');
+    }
+
+    // ==================== Init ====================
+    function initTailwind() {
+      // Any runtime tailwind config if needed
+    }
+
+    function init() {
+      initTailwind();
+      loadFromStorage();
+      loadFundBalance();
+      updateFundDisplays();
+      
+      // Show activities list by default
+      showActivitiesView();
+      
+      // Keyboard support for global search-ish (future)
+      document.addEventListener('keydown', function(e) {
+        if (e.key === '/' && document.getElementById('view-detail').classList.contains('hidden')) {
+          // focus create on list
+          const quick = document.getElementById('quick-create-input');
+          if (quick && !quick.closest('.hidden')) {
+            e.preventDefault();
+            quick.focus();
+          }
+        }
+      });
+      
+      // Demo hint for first time
+      setTimeout(() => {
+        if (activities.length === 0) {
+          const empty = document.getElementById('activities-empty');
+          if (!empty.classList.contains('hidden')) {
+            // already shows the create hint
+          }
+        }
+      }, 1200);
+      
+      // Expose for debugging (optional)
+      window.YUENZI = { getActivities: () => activities, getFund: () => fundBalance };
+    }
+
+    function showHelp() {
+      const msg = `圓子基金 使用小貼士：
+
+1. 建立活動（例如「唱K + 食飯」）
+2. 加入所有朋友名字
+3. 新增每筆開支：誰俾錢、幾多錢、項目、分俾邊啲人
+4. 系統會自動計算每個人結餘同最少還款方案
+
+所有資料只存在你手機/電腦入面，安全可靠。`;
+      alert(msg);
+    }
+
+    // Boot
+    window.onload = init;
+  </script>
+</body>
+</html>
