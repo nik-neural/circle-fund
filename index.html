@@ -222,12 +222,16 @@
       </div>
 
       <!-- Local data notice -->
-      <div class="mb-4 px-4 py-3 rounded-2xl bg-emerald-50 border border-emerald-100 flex gap-2.5 items-start">
+      <div id="local-data-notice" class="mb-4 px-4 py-3 rounded-2xl bg-emerald-50 border border-emerald-100 flex gap-2.5 items-start">
         <i class="fa-solid fa-mobile-screen text-emerald-500 text-sm mt-0.5 shrink-0"></i>
-        <p class="text-xs leading-relaxed text-emerald-700">
+        <p class="flex-1 text-xs leading-relaxed text-emerald-700">
           呢個 app 資料只存在你自己部電話/電腦入面，唔會即時 share 畀其他人。
           想同朋友 share？可以用下面「<span class="font-semibold">生成 WhatsApp 分享文字</span>」功能，一鍵生成文字 send 畀大家。
         </p>
+        <button type="button" onclick="dismissLocalDataNotice()" aria-label="關閉提示"
+                class="w-6 h-6 -mr-1 -mt-0.5 shrink-0 flex items-center justify-center text-emerald-400 hover:text-emerald-700 hover:bg-emerald-100 rounded-lg transition-colors">
+          <i class="fa-solid fa-times text-sm"></i>
+        </button>
       </div>
 
       <!-- Participants -->
@@ -607,6 +611,7 @@
     let fundBalance = 0;
     const STORAGE_KEY = 'yuenzifund_activities';
     const FUND_KEY = 'yuenzifund_fund_balance';
+    const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
 
     // ==================== Storage ====================
     function loadFromStorage() {
@@ -771,7 +776,31 @@
     function showDetailView() {
       document.getElementById('view-activities').classList.add('hidden');
       document.getElementById('view-detail').classList.remove('hidden');
+      updateLocalDataNoticeVisibility();
       renderDetail();
+    }
+
+    function isLocalDataNoticeDismissed() {
+      try {
+        return localStorage.getItem(LOCAL_NOTICE_KEY) === '1';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function updateLocalDataNoticeVisibility() {
+      const notice = document.getElementById('local-data-notice');
+      if (!notice) return;
+      notice.classList.toggle('hidden', isLocalDataNoticeDismissed());
+    }
+
+    function dismissLocalDataNotice() {
+      try {
+        localStorage.setItem(LOCAL_NOTICE_KEY, '1');
+      } catch (e) {
+        console.warn('Failed to save notice dismissal', e);
+      }
+      updateLocalDataNoticeVisibility();
     }
 
     function backToList() {
@@ -1635,7 +1664,7 @@
         }
 
         text += `\n${divider}\n`;
-        text += `🔗 想 update 開支？大家可以用呢個連結一齊用：\n${SHARE_APP_URL}`;
+        text += `🔗 朋友都想用圓子基金記帳？分享呢個連結，每人用自己部機獨立記帳（資料只會喺裝置本地儲存）：\n${SHARE_APP_URL}`;
       } else {
         text += `圓子基金 — ${act.name}\n`;
         text += `參加者：${act.participants.join('、')}\n`;
