@@ -1058,24 +1058,16 @@
         
         wrapper.innerHTML = `
           <input type="checkbox" value="${escapeHtml(name)}" ${isChecked ? 'checked' : ''} 
-                 class="w-4 h-4 accent-emerald-500 pointer-events-none">
+                 class="w-4 h-4 accent-emerald-500">
           <span class="text-sm font-medium select-none">${escapeHtml(name)}</span>
         `;
         
-        // Make whole label toggle the checkbox
-        wrapper.onclick = (e) => {
-          if (e.target.tagName === 'INPUT') return;
-          const cb = wrapper.querySelector('input');
-          cb.checked = !cb.checked;
-          wrapper.classList.toggle('border-emerald-300', cb.checked);
-          wrapper.classList.toggle('bg-white', cb.checked);
-        };
-        
         const cb = wrapper.querySelector('input');
-        cb.onchange = () => {
+        const syncSplitStyle = () => {
           wrapper.classList.toggle('border-emerald-300', cb.checked);
           wrapper.classList.toggle('bg-white', cb.checked);
         };
+        cb.addEventListener('change', syncSplitStyle);
         
         container.appendChild(wrapper);
       });
