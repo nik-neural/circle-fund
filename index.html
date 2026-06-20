@@ -283,11 +283,11 @@
       </div>
 
       <!-- Main content: Form + List -->
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:items-stretch">
         
         <!-- Add Expense Form -->
-        <div class="lg:col-span-2">
-          <div class="hk-card p-5 border border-slate-100">
+        <div class="flex flex-col min-h-0">
+          <div class="hk-card p-5 border border-slate-100 flex-1 flex flex-col">
             <div class="section-title mb-3 flex items-center gap-2">
               <i class="fa-solid fa-receipt"></i>
               <span id="expense-form-title">新增開支</span>
@@ -371,24 +371,29 @@
         </div>
         
         <!-- Expenses List -->
-        <div class="lg:col-span-3">
-          <div class="flex items-center justify-between mb-2 px-1">
-            <div class="section-title">開支記錄 <span id="expenses-count-badge" class="font-mono text-xs ml-1 text-slate-400"></span></div>
-            <button onclick="loadDemoData()" 
-                    class="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
-              <i class="fa-solid fa-magic"></i>
-              <span>載入範例</span>
-            </button>
-          </div>
-          
-          <div id="expenses-list" class="space-y-2.5 max-h-[420px] overflow-auto pr-1 custom-scroll">
-            <!-- Populated by JS -->
-          </div>
-          
-          <div id="expenses-empty" class="hidden mt-3 text-center py-8 bg-white border border-dashed border-slate-200 rounded-3xl">
-            <i class="fa-solid fa-receipt text-3xl text-slate-300"></i>
-            <p class="mt-2 text-sm text-slate-500">仲未有開支</p>
-            <p class="text-xs text-slate-400">喺左邊加入第一筆記錄</p>
+        <div class="flex flex-col min-h-0">
+          <div class="hk-card p-5 border border-slate-100 flex-1 flex flex-col min-h-0">
+            <div class="flex items-center justify-between mb-3">
+              <div class="section-title flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <span>開支記錄 <span id="expenses-count-badge" class="font-mono text-xs ml-1 text-slate-400"></span></span>
+              </div>
+              <button onclick="loadDemoData()" 
+                      class="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 shrink-0">
+                <i class="fa-solid fa-magic"></i>
+                <span>載入範例</span>
+              </button>
+            </div>
+            
+            <div id="expenses-list" class="space-y-2.5 flex-1 min-h-0 overflow-auto pr-1 custom-scroll">
+              <!-- Populated by JS -->
+            </div>
+            
+            <div id="expenses-empty" class="hidden flex-1 flex flex-col items-center justify-center text-center py-8 border border-dashed border-slate-200 rounded-2xl">
+              <i class="fa-solid fa-receipt text-3xl text-slate-300"></i>
+              <p class="mt-2 text-sm text-slate-500">仲未有開支</p>
+              <p class="text-xs text-slate-400">喺左邊加入第一筆記錄</p>
+            </div>
           </div>
         </div>
       </div>
@@ -400,18 +405,11 @@
             <i class="fa-solid fa-balance-scale text-emerald-500"></i>
             <span>結算結果</span>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="copySettlement()" 
-                    class="text-xs flex items-center gap-x-1.5 px-3 h-8 rounded-2xl border border-slate-200 hover:bg-white text-slate-600 active:bg-slate-100">
-              <i class="fa-solid fa-copy"></i>
-              <span>複製結果</span>
-            </button>
-            <button onclick="generateWhatsAppShare()" 
-                    class="text-xs flex items-center gap-x-1.5 px-3 h-8 rounded-2xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 active:bg-emerald-200 font-medium">
-              <i class="fa-brands fa-whatsapp"></i>
-              <span>生成 WhatsApp 分享文字</span>
-            </button>
-          </div>
+          <button onclick="generateWhatsAppShare()" 
+                  class="text-xs flex items-center gap-x-1.5 px-3 h-8 rounded-2xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 active:bg-emerald-200 font-medium">
+            <i class="fa-brands fa-whatsapp"></i>
+            <span>生成 WhatsApp 分享文字</span>
+          </button>
         </div>
         
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -437,20 +435,34 @@
               </div>
             </div>
 
-            <!-- 圓子基金模式新增：兩個結算按鈕 -->
-            <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button onclick="markAsDirectlySettled()" 
-                      class="h-10 text-sm font-semibold border border-slate-300 hover:bg-slate-50 active:bg-slate-100 rounded-2xl transition-colors flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-handshake text-xs"></i>
-                <span>完全結清（自己轉帳）</span>
-              </button>
-              <button onclick="transferSettlementToFund()" 
-                      class="h-10 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-2xl transition-all flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-piggy-bank"></i>
-                <span>轉入圓子基金</span>
-              </button>
+            <!-- 圓子基金模式：逐條揀選轉入 -->
+            <div id="fund-transfer-controls" class="mt-4 pt-4 border-t border-slate-100 hidden">
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-[10px] text-emerald-700 font-medium">剔選想由基金承擔嘅還款</div>
+                <div class="flex gap-1">
+                  <button type="button" onclick="selectAllFundTransfers(true)"
+                          class="text-[10px] px-2.5 h-6 rounded-xl bg-emerald-100 text-emerald-700 font-medium active:bg-emerald-200">全選</button>
+                  <button type="button" onclick="selectAllFundTransfers(false)"
+                          class="text-[10px] px-2.5 h-6 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">取消</button>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button onclick="markAsDirectlySettled()" 
+                        class="h-10 text-sm font-semibold border border-slate-300 hover:bg-slate-50 active:bg-slate-100 rounded-2xl transition-colors flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-handshake text-xs"></i>
+                  <span>完全結清（自己轉帳）</span>
+                </button>
+                <button id="transfer-selected-fund-btn" onclick="transferSelectedSettlementsToFund()" 
+                        class="min-h-10 py-2 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-2xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <i class="fa-solid fa-piggy-bank shrink-0 text-base leading-none"></i>
+                  <span class="text-center leading-tight">
+                    <span class="block">轉入已選項目去基金</span>
+                    <span id="transfer-selected-fund-amount" class="block text-[10px] font-semibold opacity-90 tabular-nums min-h-[14px]">&nbsp;</span>
+                  </span>
+                </button>
+              </div>
+              <div class="text-[10px] text-center text-emerald-600 mt-1.5">可以逐條揀，淨係轉入已剔選嘅還款去基金</div>
             </div>
-            <div class="text-[10px] text-center text-emerald-600 mt-1.5">轉入基金 = 唔使即時還錢，由共同基金承擔</div>
           </div>
         </div>
         
@@ -617,7 +629,10 @@
     function loadFromStorage() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) activities = JSON.parse(raw);
+        if (raw) {
+          activities = JSON.parse(raw);
+          activities.forEach(act => ensureFundTransfers(act));
+        }
       } catch (e) {
         console.warn('Failed to load from storage', e);
         activities = [];
@@ -914,6 +929,7 @@
         name: name,
         participants: [],
         expenses: [],
+        fundTransfers: [],
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -1099,7 +1115,7 @@
         const isChecked = toSelect.includes(name);
         
         const wrapper = document.createElement('label');
-        wrapper.className = `flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border ${isChecked ? 'bg-white border-emerald-300' : 'bg-white border-transparent hover:bg-slate-100'} transition-colors`;
+        wrapper.className = `flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border box-border ${isChecked ? 'bg-white border-emerald-300' : 'bg-white border-slate-200 hover:bg-slate-100'} transition-colors`;
         
         wrapper.innerHTML = `
           <input type="checkbox" value="${escapeHtml(name)}" ${isChecked ? 'checked' : ''} 
@@ -1110,7 +1126,7 @@
         const cb = wrapper.querySelector('input');
         const syncSplitStyle = () => {
           wrapper.classList.toggle('border-emerald-300', cb.checked);
-          wrapper.classList.toggle('bg-white', cb.checked);
+          wrapper.classList.toggle('border-slate-200', !cb.checked);
         };
         cb.addEventListener('change', syncSplitStyle);
         
@@ -1126,7 +1142,7 @@
         const label = cb.closest('label');
         if (label) {
           label.classList.toggle('border-emerald-300', checked);
-          label.classList.toggle('bg-white', checked);
+          label.classList.toggle('border-slate-200', !checked);
         }
       });
     }
@@ -1324,6 +1340,7 @@
       if (!confirm(`確定清空所有 ${act.expenses.length} 筆開支？`)) return;
       
       act.expenses = [];
+      act.fundTransfers = [];
       act.updatedAt = Date.now();
       saveToStorage();
       cancelExpenseEdit();
@@ -1345,16 +1362,18 @@
       badge.textContent = act.expenses.length > 0 ? `(${act.expenses.length})` : '';
       
       if (act.expenses.length === 0) {
+        list.classList.add('hidden');
         empty.classList.remove('hidden');
         return;
       }
+      list.classList.remove('hidden');
       empty.classList.add('hidden');
       
       act.expenses.forEach(exp => {
         const share = exp.splitWith.length > 0 ? (exp.amount / exp.splitWith.length) : 0;
         
         const card = document.createElement('div');
-        card.className = 'expense-card hk-card border border-slate-100 p-3.5 flex gap-3 items-start';
+        card.className = 'expense-card bg-slate-50 border border-slate-100 rounded-2xl p-3.5 flex gap-3 items-start';
         
         card.innerHTML = `
           <div class="flex-1 min-w-0">
@@ -1432,6 +1451,27 @@
       });
       
       return balances;
+    }
+
+    function ensureFundTransfers(act) {
+      if (!act) return [];
+      if (!Array.isArray(act.fundTransfers)) act.fundTransfers = [];
+      return act.fundTransfers;
+    }
+
+    function settlementMatchKey(s) {
+      const amount = Math.round((Number(s.amount) || 0) * 100) / 100;
+      return `${s.from}|${s.to}|${amount.toFixed(2)}`;
+    }
+
+    function isSettlementTransferred(act, settlement) {
+      const key = settlementMatchKey(settlement);
+      return ensureFundTransfers(act).some(t => settlementMatchKey(t) === key);
+    }
+
+    function getPendingSettlements(act) {
+      const settlements = computeSettlements(computeBalances(act));
+      return settlements.filter(s => !isSettlementTransferred(act, s));
     }
 
     function computeSettlements(balances) {
@@ -1524,23 +1564,25 @@
       });
     }
 
-    function renderSettlements(settlements) {
+    function renderSettlements(act) {
       const container = document.getElementById('settlements-list');
       const empty = document.getElementById('settlements-empty');
+      const pending = getPendingSettlements(act);
+      const transferred = ensureFundTransfers(act);
       
       container.innerHTML = '';
       
-      if (settlements.length === 0) {
-        empty.classList.remove('hidden');
-        return;
-      }
-      empty.classList.add('hidden');
-      
-      settlements.forEach((s, idx) => {
-        const row = document.createElement('div');
-        row.className = `settlement-row flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-slate-100`;
+      pending.forEach(s => {
+        const row = document.createElement('label');
+        row.className = 'settlement-row flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors';
         
         row.innerHTML = `
+          <input type="checkbox"
+                 class="settlement-fund-checkbox w-4 h-4 accent-emerald-500 shrink-0"
+                 data-from="${escapeHtml(s.from)}"
+                 data-to="${escapeHtml(s.to)}"
+                 data-amount="${s.amount}"
+                 onchange="updateFundTransferButtonState()">
           <div class="flex items-center gap-2 min-w-0 flex-1">
             <span class="font-semibold text-red-600 shrink-0">${escapeHtml(s.from)}</span>
             <span class="text-slate-400 text-sm px-1">要俾</span>
@@ -1548,26 +1590,102 @@
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <div class="font-bold tabular-nums text-lg text-slate-800">${formatMoney(s.amount)}</div>
-            <button onclick="copySingleSettlement(${idx})" 
-                    class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg">
+            <button type="button"
+                    class="copy-settlement-btn w-7 h-7 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg">
               <i class="fa-solid fa-copy text-xs"></i>
             </button>
+          </div>
+        `;
+
+        row.querySelector('.copy-settlement-btn').addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          copySettlementLine(s.from, s.to, s.amount);
+        });
+        
+        container.appendChild(row);
+      });
+
+      transferred.forEach(t => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-emerald-100 bg-emerald-50';
+        
+        row.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <i class="fa-solid fa-check-circle text-emerald-500 text-sm shrink-0"></i>
+            <span class="font-semibold text-red-600 shrink-0">${escapeHtml(t.from)}</span>
+            <span class="text-slate-400 text-sm px-1">要俾</span>
+            <span class="font-semibold text-emerald-700 shrink-0">${escapeHtml(t.to)}</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="font-bold tabular-nums text-base text-emerald-700">${formatMoney(t.amount)}</div>
+            <span class="text-[10px] font-medium text-emerald-600 whitespace-nowrap">已由基金承擔</span>
           </div>
         `;
         
         container.appendChild(row);
       });
+      
+      if (pending.length === 0 && transferred.length === 0) {
+        empty.classList.remove('hidden');
+      } else {
+        empty.classList.add('hidden');
+      }
+
+      updateFundTransferButtonState();
+    }
+
+    function updateFundTransferButtonState() {
+      const act = getCurrentActivity();
+      const controls = document.getElementById('fund-transfer-controls');
+      const btn = document.getElementById('transfer-selected-fund-btn');
+      const amountEl = document.getElementById('transfer-selected-fund-amount');
+      if (!act || !controls || !btn || !amountEl) return;
+
+      const pending = getPendingSettlements(act);
+      const selected = getSelectedPendingSettlements();
+      const selectedTotal = selected.reduce((sum, s) => sum + s.amount, 0);
+
+      controls.classList.toggle('hidden', pending.length === 0);
+      btn.disabled = selected.length === 0;
+      amountEl.textContent = selected.length > 0 ? formatMoney(selectedTotal) : '\u00a0';
+    }
+
+    function getSelectedPendingSettlements() {
+      const act = getCurrentActivity();
+      if (!act) return [];
+
+      const pending = getPendingSettlements(act);
+      const selected = [];
+
+      document.querySelectorAll('.settlement-fund-checkbox:checked').forEach(cb => {
+        const match = pending.find(s =>
+          s.from === cb.dataset.from &&
+          s.to === cb.dataset.to &&
+          Math.abs(s.amount - parseFloat(cb.dataset.amount)) < 0.005
+        );
+        if (match) selected.push(match);
+      });
+
+      return selected;
+    }
+
+    function selectAllFundTransfers(checked) {
+      document.querySelectorAll('.settlement-fund-checkbox').forEach(cb => {
+        cb.checked = checked;
+      });
+      updateFundTransferButtonState();
     }
 
     function renderSettlement() {
       const act = getCurrentActivity();
       if (!act) return;
       
+      ensureFundTransfers(act);
       const balances = computeBalances(act);
-      const settlements = computeSettlements(balances);
       
       renderBalances(balances);
-      renderSettlements(settlements);
+      renderSettlements(act);
     }
 
     // ==================== Main Detail Render ====================
@@ -1622,68 +1740,56 @@
     // ==================== Settlement Copy ====================
     const SHARE_APP_URL = 'https://nik-neural.github.io/circle-fund/';
 
-    function buildSettlementShareText({ includeFundBalance = false, style = 'plain' } = {}) {
+    function buildWhatsAppShareText() {
       const act = getCurrentActivity();
       if (!act) return '';
 
       const balances = computeBalances(act);
-      const settlements = computeSettlements(balances);
       const total = act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
       const divider = '────────────────';
 
-      let text = '';
-
-      if (style === 'whatsapp') {
-        text += `📊 【圓子基金】${act.name}\n`;
-        text += `${divider}\n`;
-        text += `💰 總開支：${formatMoney(total)}\n`;
-        if (includeFundBalance) {
-          text += `🐷 圓子基金餘額：${formatMoney(fundBalance)}\n`;
-        }
-        text += `${divider}\n`;
-        text += '【每人結餘】\n';
-        Object.entries(balances).sort((a, b) => b[1] - a[1]).forEach(([n, v]) => {
-          const abs = Math.abs(v);
-          if (abs < 0.01) {
-            text += `${n}：已兩清 ✅\n`;
-          } else {
-            const sign = v >= 0.005 ? '應收' : '應俾';
-            text += `${n}：${sign} ${formatMoney(abs)}\n`;
-          }
-        });
-
-        if (settlements.length > 0) {
-          text += `\n${divider}\n`;
-          text += '【建議還款】\n';
-          settlements.forEach(s => {
-            text += `${s.from} 要俾 ${s.to} ${formatMoney(s.amount)}\n`;
-          });
+      let text = `📊 【圓子基金】${act.name}\n`;
+      text += `${divider}\n`;
+      text += `💰 總開支：${formatMoney(total)}\n`;
+      text += `🐷 圓子基金餘額：${formatMoney(fundBalance)}\n`;
+      text += `${divider}\n`;
+      text += '【每人結餘】\n';
+      Object.entries(balances).sort((a, b) => b[1] - a[1]).forEach(([n, v]) => {
+        const abs = Math.abs(v);
+        if (abs < 0.01) {
+          text += `${n}：已兩清 ✅\n`;
         } else {
-          text += `\n${divider}\n`;
-          text += '✅ 已經結清！大家兩清啦 🎉\n';
+          const sign = v >= 0.005 ? '應收' : '應俾';
+          text += `${n}：${sign} ${formatMoney(abs)}\n`;
         }
+      });
 
+      const pending = getPendingSettlements(act);
+      const transferred = ensureFundTransfers(act);
+
+      if (pending.length > 0) {
         text += `\n${divider}\n`;
-        text += `🔗 朋友都想用圓子基金記帳？分享呢個連結，每人用自己部機獨立記帳（資料只會喺裝置本地儲存）：\n${SHARE_APP_URL}`;
-      } else {
-        text += `圓子基金 — ${act.name}\n`;
-        text += `參加者：${act.participants.join('、')}\n`;
-        text += `總開支：${formatMoney(total)}\n\n`;
-        text += '【每人結餘】\n';
-        Object.entries(balances).sort((a, b) => b[1] - a[1]).forEach(([n, v]) => {
-          const sign = v >= 0 ? '應收' : '應俾';
-          text += `${n}：${sign} ${formatMoney(Math.abs(v))}\n`;
+        text += '【建議還款】\n';
+        pending.forEach(s => {
+          text += `${s.from} 要俾 ${s.to} ${formatMoney(s.amount)}\n`;
         });
-
-        if (settlements.length > 0) {
-          text += '\n【建議還款】\n';
-          settlements.forEach(s => {
-            text += `${s.from} 要俾 ${s.to} ${formatMoney(s.amount)}\n`;
-          });
-        } else {
-          text += '\n✅ 已經結清！\n';
-        }
       }
+
+      if (transferred.length > 0) {
+        text += `\n${divider}\n`;
+        text += '【已由基金承擔】\n';
+        transferred.forEach(t => {
+          text += `${t.from} 要俾 ${t.to} ${formatMoney(t.amount)} ✅\n`;
+        });
+      }
+
+      if (pending.length === 0 && transferred.length === 0) {
+        text += `\n${divider}\n`;
+        text += '✅ 已經結清！大家兩清啦 🎉\n';
+      }
+
+      text += `\n${divider}\n`;
+      text += `🔗 朋友都想用圓子基金記帳？分享呢個連結，每人用自己部機獨立記帳（資料只會喺裝置本地儲存）：\n${SHARE_APP_URL}`;
 
       return text;
     }
@@ -1696,26 +1802,14 @@
       });
     }
 
-    function copySettlement() {
-      const text = buildSettlementShareText();
-      if (!text) return;
-      copyTextToClipboard(text, '結算結果已複製到剪貼簿');
-    }
-
     function generateWhatsAppShare() {
-      const text = buildSettlementShareText({ includeFundBalance: true, style: 'whatsapp' });
+      const text = buildWhatsAppShareText();
       if (!text) return;
       copyTextToClipboard(text, '已生成 WhatsApp 分享文字');
     }
 
-    function copySingleSettlement(idx) {
-      const act = getCurrentActivity();
-      if (!act) return;
-      const settlements = computeSettlements(computeBalances(act));
-      const s = settlements[idx];
-      if (!s) return;
-      
-      const text = `${s.from} 要俾 ${s.to} ${formatMoney(s.amount)}`;
+    function copySettlementLine(from, to, amount) {
+      const text = `${from} 要俾 ${to} ${formatMoney(amount)}`;
       navigator.clipboard.writeText(text).then(() => {
         showToast('已複製這筆還款');
       }).catch(() => alert(text));
@@ -1725,7 +1819,7 @@
     function markAsDirectlySettled() {
       const act = getCurrentActivity();
       if (!act) return;
-      const settlements = computeSettlements(computeBalances(act));
+      const settlements = getPendingSettlements(act);
       if (settlements.length === 0) {
         showToast('已經結清，無需額外操作');
         return;
@@ -1734,33 +1828,40 @@
       // 這裡可以之後加「已結清」標記，現階段只給提示
     }
 
-    function transferSettlementToFund() {
+    function transferSelectedSettlementsToFund() {
       const act = getCurrentActivity();
       if (!act) return;
-      
-      const balances = computeBalances(act);
-      const settlements = computeSettlements(balances);
-      
-      const total = settlements.reduce((sum, s) => sum + s.amount, 0);
-      
-      if (total < 0.01) {
-        showToast('已經結清，無需轉入基金');
+
+      const selected = getSelectedPendingSettlements();
+      if (selected.length === 0) {
+        showToast('請至少揀一條還款', 'error');
         return;
       }
-      
-      // 核心動作：將本次結算總額轉入全局圓子基金
+
+      const total = selected.reduce((sum, s) => sum + s.amount, 0);
+      const transfers = ensureFundTransfers(act);
+
+      selected.forEach(s => {
+        transfers.push({
+          from: s.from,
+          to: s.to,
+          amount: Math.round(s.amount * 100) / 100,
+          transferredAt: Date.now()
+        });
+      });
+
       fundBalance += total;
+      if (fundBalance < 0) fundBalance = 0;
+      act.updatedAt = Date.now();
       saveFundBalance();
+      saveToStorage();
       updateFundDisplays();
-      
-      showToast(`已轉入圓子基金 ${formatMoney(total)}！`);
-      
-      // 重新渲染結算區，方便用戶即時看到變化
+
+      showToast(`已轉入圓子基金 ${formatMoney(total)}（${selected.length} 筆）`);
       renderSettlement();
-      
-      // 額外提示
+
       setTimeout(() => {
-        showToast('大家而家可以安心，基金已經承擔咗呢個活動嘅結餘');
+        showToast('已選還款已由基金承擔，其餘請大家自行轉帳');
       }, 1800);
     }
 
