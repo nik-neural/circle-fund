@@ -221,6 +221,15 @@
         </button>
       </div>
 
+      <!-- Local data notice -->
+      <div class="mb-4 px-4 py-3 rounded-2xl bg-emerald-50 border border-emerald-100 flex gap-2.5 items-start">
+        <i class="fa-solid fa-mobile-screen text-emerald-500 text-sm mt-0.5 shrink-0"></i>
+        <p class="text-xs leading-relaxed text-emerald-700">
+          呢個 app 資料只存在你自己部電話/電腦入面，唔會即時 share 畀其他人。
+          想同朋友 share？可以用下面「<span class="font-semibold">生成 WhatsApp 分享文字</span>」功能，一鍵生成文字 send 畀大家。
+        </p>
+      </div>
+
       <!-- Participants -->
       <div class="hk-card p-5 mb-5 border border-slate-100">
         <div class="flex items-center justify-between mb-3">
@@ -382,16 +391,23 @@
 
       <!-- Settlement Section -->
       <div class="mt-8">
-        <div class="flex items-center justify-between mb-3 px-1">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 px-1">
           <div class="section-title text-base flex items-center gap-2">
             <i class="fa-solid fa-balance-scale text-emerald-500"></i>
             <span>結算結果</span>
           </div>
-          <button onclick="copySettlement()" 
-                  class="text-xs flex items-center gap-x-1.5 px-3 h-8 rounded-2xl border border-slate-200 hover:bg-white text-slate-600 active:bg-slate-100">
-            <i class="fa-solid fa-copy"></i>
-            <span>複製結果</span>
-          </button>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="copySettlement()" 
+                    class="text-xs flex items-center gap-x-1.5 px-3 h-8 rounded-2xl border border-slate-200 hover:bg-white text-slate-600 active:bg-slate-100">
+              <i class="fa-solid fa-copy"></i>
+              <span>複製結果</span>
+            </button>
+            <button onclick="generateWhatsAppShare()" 
+                    class="text-xs flex items-center gap-x-1.5 px-3 h-8 rounded-2xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 active:bg-emerald-200 font-medium">
+              <i class="fa-brands fa-whatsapp"></i>
+              <span>生成 WhatsApp 分享文字</span>
+            </button>
+          </div>
         </div>
         
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1575,37 +1591,92 @@
     }
 
     // ==================== Settlement Copy ====================
-    function copySettlement() {
+    const SHARE_APP_URL = 'https://nik-neural.github.io/circle-fund/';
+
+    function buildSettlementShareText({ includeFundBalance = false, style = 'plain' } = {}) {
       const act = getCurrentActivity();
-      if (!act) return;
-      
+      if (!act) return '';
+
       const balances = computeBalances(act);
       const settlements = computeSettlements(balances);
-      
-      let text = `圓子基金 — ${act.name}\n`;
-      text += `參加者：${act.participants.join('、')}\n`;
-      text += `總開支：${formatMoney(act.expenses.reduce((s,e)=>s+e.amount,0))}\n\n`;
-      
-      text += '【每人結餘】\n';
-      Object.entries(balances).sort((a,b)=>b[1]-a[1]).forEach(([n,v]) => {
-        const sign = v >= 0 ? '應收' : '應俾';
-        text += `${n}：${sign} ${formatMoney(Math.abs(v))}\n`;
-      });
-      
-      if (settlements.length > 0) {
-        text += '\n【建議還款】\n';
-        settlements.forEach(s => {
-          text += `${s.from} 要俾 ${s.to} ${formatMoney(s.amount)}\n`;
+      const total = act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      const divider = '────────────────';
+
+      let text = '';
+
+      if (style === 'whatsapp') {
+        text += `📊 【圓子基金】${act.name}\n`;
+        text += `${divider}\n`;
+        text += `💰 總開支：${formatMoney(total)}\n`;
+        if (includeFundBalance) {
+          text += `🐷 圓子基金餘額：${formatMoney(fundBalance)}\n`;
+        }
+        text += `${divider}\n`;
+        text += '【每人結餘】\n';
+        Object.entries(balances).sort((a, b) => b[1] - a[1]).forEach(([n, v]) => {
+          const abs = Math.abs(v);
+          if (abs < 0.01) {
+            text += `${n}：已兩清 ✅\n`;
+          } else {
+            const sign = v >= 0.005 ? '應收' : '應俾';
+            text += `${n}：${sign} ${formatMoney(abs)}\n`;
+          }
         });
+
+        if (settlements.length > 0) {
+          text += `\n${divider}\n`;
+          text += '【建議還款】\n';
+          settlements.forEach(s => {
+            text += `${s.from} 要俾 ${s.to} ${formatMoney(s.amount)}\n`;
+          });
+        } else {
+          text += `\n${divider}\n`;
+          text += '✅ 已經結清！大家兩清啦 🎉\n';
+        }
+
+        text += `\n${divider}\n`;
+        text += `🔗 想 update 開支？大家可以用呢個連結一齊用：\n${SHARE_APP_URL}`;
       } else {
-        text += '\n✅ 已經結清！\n';
+        text += `圓子基金 — ${act.name}\n`;
+        text += `參加者：${act.participants.join('、')}\n`;
+        text += `總開支：${formatMoney(total)}\n\n`;
+        text += '【每人結餘】\n';
+        Object.entries(balances).sort((a, b) => b[1] - a[1]).forEach(([n, v]) => {
+          const sign = v >= 0 ? '應收' : '應俾';
+          text += `${n}：${sign} ${formatMoney(Math.abs(v))}\n`;
+        });
+
+        if (settlements.length > 0) {
+          text += '\n【建議還款】\n';
+          settlements.forEach(s => {
+            text += `${s.from} 要俾 ${s.to} ${formatMoney(s.amount)}\n`;
+          });
+        } else {
+          text += '\n✅ 已經結清！\n';
+        }
       }
-      
+
+      return text;
+    }
+
+    function copyTextToClipboard(text, successMessage) {
       navigator.clipboard.writeText(text).then(() => {
-        showToast('結算結果已複製到剪貼簿');
+        showToast(successMessage);
       }).catch(() => {
         prompt('請手動複製以下內容：', text);
       });
+    }
+
+    function copySettlement() {
+      const text = buildSettlementShareText();
+      if (!text) return;
+      copyTextToClipboard(text, '結算結果已複製到剪貼簿');
+    }
+
+    function generateWhatsAppShare() {
+      const text = buildSettlementShareText({ includeFundBalance: true, style: 'whatsapp' });
+      if (!text) return;
+      copyTextToClipboard(text, '已生成 WhatsApp 分享文字');
     }
 
     function copySingleSettlement(idx) {
