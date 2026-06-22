@@ -215,14 +215,30 @@
         </div>
       </div>
 
-      <!-- Activity Name -->
-      <div class="flex items-center gap-x-3 mb-5">
-        <div id="activity-name-display" 
-             class="text-3xl font-bold tracking-tight text-slate-900 cursor-pointer hover:text-emerald-600 transition-colors"
-             onclick="editActivityName()"></div>
-        <button onclick="editActivityName()" 
-                class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-2xl transition-all">
-          <i class="fa-solid fa-pen text-sm"></i>
+      <!-- Activity Name + Date -->
+      <div class="mb-5">
+        <div class="flex items-center gap-x-3">
+          <div id="activity-name-display" 
+               class="text-3xl font-bold tracking-tight text-slate-900 cursor-pointer hover:text-emerald-600 transition-colors"
+               onclick="editActivityName()"></div>
+          <button onclick="editActivityName()" 
+                  class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-2xl transition-all">
+            <i class="fa-solid fa-pen text-sm"></i>
+          </button>
+        </div>
+        <div id="activity-date-row" class="hidden mt-1.5 flex items-center gap-2">
+          <button type="button" onclick="showEditDatesModal()"
+                  class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-emerald-600 transition-colors">
+            <i class="fa-solid fa-calendar-days text-emerald-500 text-xs"></i>
+            <span id="activity-date-display" class="font-medium"></span>
+            <span id="activity-date-kind-badge"></span>
+            <i class="fa-solid fa-pen text-[10px] text-slate-400"></i>
+          </button>
+        </div>
+        <button type="button" id="activity-date-add" onclick="showEditDatesModal()"
+                class="hidden mt-1.5 text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
+          <i class="fa-solid fa-plus text-[10px]"></i>
+          <span>加入日期</span>
         </button>
       </div>
 
@@ -500,7 +516,7 @@
   <div id="create-modal" onclick="if (event.target.id === 'create-modal') hideCreateModal()" 
        class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[100]">
     <div onclick="event.stopImmediatePropagation()" 
-         class="w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+         class="w-full sm:w-[440px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
       <div class="flex justify-between items-center mb-5">
         <div class="font-bold text-xl">建立新活動</div>
         <button onclick="hideCreateModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
@@ -512,12 +528,64 @@
                class="w-full border border-slate-200 focus:border-emerald-400 h-12 rounded-2xl px-4 text-base outline-none">
         <p class="text-xs text-slate-500 mt-1.5">之後可以隨時改名同加入朋友</p>
       </div>
+
+      <div class="mt-4">
+        <label class="block text-sm font-semibold mb-1.5 text-slate-600">日期 <span class="font-normal text-slate-400">（預設今日）</span></label>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <div class="text-[10px] text-slate-400 mb-1 px-0.5">開始</div>
+            <input id="modal-date-start" type="date"
+                   class="w-full border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+          </div>
+          <div>
+            <div class="text-[10px] text-slate-400 mb-1 px-0.5">結束</div>
+            <input id="modal-date-end" type="date"
+                   class="w-full border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-1.5">預設今日，可改。跨多日會自動顯示為外遊。</p>
+      </div>
       
       <div class="mt-6 flex gap-3">
         <button onclick="hideCreateModal()" 
                 class="flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
         <button onclick="createActivityFromModal()" 
                 class="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-2xl font-bold text-sm transition-all">建立活動</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Activity Dates Modal -->
+  <div id="edit-dates-modal" onclick="if (event.target.id === 'edit-dates-modal') hideEditDatesModal()" 
+       class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[105]">
+    <div onclick="event.stopImmediatePropagation()" 
+         class="w-full sm:w-[400px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+      <div class="flex justify-between items-center mb-5">
+        <div class="font-bold text-xl">活動日期</div>
+        <button onclick="hideEditDatesModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <div class="text-[10px] text-slate-400 mb-1 px-0.5">開始</div>
+          <input id="edit-date-start" type="date"
+                 class="w-full border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+        </div>
+        <div>
+          <div class="text-[10px] text-slate-400 mb-1 px-0.5">結束</div>
+          <input id="edit-date-end" type="date"
+                 class="w-full border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+        </div>
+      </div>
+      <p class="text-[10px] text-slate-400 mt-2">只填開始 = 單日活動。跨多日 = 外遊。</p>
+
+      <div class="mt-6 flex gap-3">
+        <button onclick="clearActivityDates()" 
+                class="h-12 px-4 rounded-2xl border border-slate-200 font-semibold text-sm text-slate-500">清除</button>
+        <button onclick="hideEditDatesModal()" 
+                class="flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+        <button onclick="saveActivityDates()" 
+                class="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm">儲存</button>
       </div>
     </div>
   </div>
@@ -702,7 +770,7 @@
     const STORAGE_KEY = 'yuenzifund_activities';
     const FUND_KEY = 'yuenzifund_fund_balance';
     const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
-    const APP_VERSION = '1.2.0';
+    const APP_VERSION = '1.3.1';
 
     // ==================== Storage ====================
     function loadFromStorage() {
@@ -710,7 +778,10 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           activities = JSON.parse(raw);
-          activities.forEach(act => ensureFundTransfers(act));
+          activities.forEach(act => {
+            ensureFundTransfers(act);
+            ensureActivityDates(act);
+          });
         }
       } catch (e) {
         console.warn('Failed to load from storage', e);
@@ -860,6 +931,177 @@
       return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     }
 
+    // ==================== Activity Dates ====================
+    function ensureActivityDates(act) {
+      if (!act) return;
+      if (act.dateStart === undefined) act.dateStart = null;
+      if (act.dateEnd === undefined) act.dateEnd = null;
+    }
+
+    function normalizeActivityDates(dateStart, dateEnd) {
+      const start = (dateStart || '').trim() || null;
+      let end = (dateEnd || '').trim() || null;
+      if (!start && end) return { dateStart: end, dateEnd: end };
+      if (!start) return { dateStart: null, dateEnd: null };
+      if (!end || end < start) end = start;
+      return { dateStart: start, dateEnd: end };
+    }
+
+    function parseISODateLocal(iso) {
+      if (!iso) return null;
+      const [y, m, d] = iso.split('-').map(Number);
+      if (!y || !m || !d) return null;
+      return new Date(y, m - 1, d);
+    }
+
+    function getActivityDayCount(act) {
+      if (!act?.dateStart) return 0;
+      const start = parseISODateLocal(act.dateStart);
+      const end = parseISODateLocal(act.dateEnd || act.dateStart);
+      if (!start || !end) return 0;
+      const diff = Math.round((end - start) / 86400000);
+      return diff + 1;
+    }
+
+    function formatShortDate(date) {
+      return date.toLocaleDateString('zh-HK', { month: 'long', day: 'numeric' });
+    }
+
+    function formatActivityDateRange(act) {
+      if (!act?.dateStart) return null;
+      const start = parseISODateLocal(act.dateStart);
+      const end = parseISODateLocal(act.dateEnd || act.dateStart);
+      if (!start || !end) return null;
+
+      const sameYear = start.getFullYear() === end.getFullYear();
+      const sameDay = act.dateStart === (act.dateEnd || act.dateStart);
+
+      if (sameDay) {
+        return start.toLocaleDateString('zh-HK', { year: 'numeric', month: 'long', day: 'numeric' });
+      }
+
+      const startStr = sameYear
+        ? formatShortDate(start)
+        : start.toLocaleDateString('zh-HK', { year: 'numeric', month: 'long', day: 'numeric' });
+      const endStr = end.toLocaleDateString('zh-HK', { year: 'numeric', month: 'long', day: 'numeric' });
+      return `${startStr} – ${endStr}`;
+    }
+
+    function getActivityDateKind(act) {
+      const days = getActivityDayCount(act);
+      if (days <= 0) return null;
+      if (days === 1) return { label: '單日', className: 'bg-slate-100 text-slate-600' };
+      return { label: `外遊 · ${days}日`, className: 'bg-sky-100 text-sky-700' };
+    }
+
+    function renderActivityDateKindBadge(act, size = 'sm') {
+      const kind = getActivityDateKind(act);
+      if (!kind) return '';
+      const sizeClass = size === 'xs' ? 'text-[9px] px-1.5 py-px' : 'text-[10px] px-2 py-0.5';
+      return `<span class="inline-flex items-center rounded-lg font-semibold ${sizeClass} ${kind.className}">${kind.label}</span>`;
+    }
+
+    function getTodayISODate() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function resetCreateModalDates() {
+      const today = getTodayISODate();
+      const start = document.getElementById('modal-date-start');
+      const end = document.getElementById('modal-date-end');
+      if (start) start.value = today;
+      if (end) end.value = today;
+    }
+
+    function readCreateModalDates() {
+      const start = document.getElementById('modal-date-start');
+      const end = document.getElementById('modal-date-end');
+      return normalizeActivityDates(start?.value, end?.value);
+    }
+
+    function showEditDatesModal() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      const modal = document.getElementById('edit-dates-modal');
+      const start = document.getElementById('edit-date-start');
+      const end = document.getElementById('edit-date-end');
+      if (!modal || !start || !end) return;
+
+      const today = getTodayISODate();
+      start.value = act.dateStart || today;
+      end.value = act.dateEnd || act.dateStart || today;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function hideEditDatesModal() {
+      const modal = document.getElementById('edit-dates-modal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function saveActivityDates() {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const start = document.getElementById('edit-date-start');
+      const end = document.getElementById('edit-date-end');
+      const normalized = normalizeActivityDates(start?.value, end?.value);
+
+      act.dateStart = normalized.dateStart;
+      act.dateEnd = normalized.dateEnd;
+      act.updatedAt = Date.now();
+      saveToStorage();
+      hideEditDatesModal();
+      renderActivityDateDisplay();
+      renderActivitiesList();
+      showToast(act.dateStart ? '日期已更新' : '已清除日期');
+    }
+
+    function clearActivityDates() {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      act.dateStart = null;
+      act.dateEnd = null;
+      act.updatedAt = Date.now();
+      saveToStorage();
+      hideEditDatesModal();
+      renderActivityDateDisplay();
+      renderActivitiesList();
+      showToast('已清除日期');
+    }
+
+    function renderActivityDateDisplay() {
+      const act = getCurrentActivity();
+      const row = document.getElementById('activity-date-row');
+      const addBtn = document.getElementById('activity-date-add');
+      const display = document.getElementById('activity-date-display');
+      const badge = document.getElementById('activity-date-kind-badge');
+      if (!act || !row || !addBtn || !display || !badge) return;
+
+      const range = formatActivityDateRange(act);
+      if (range) {
+        row.classList.remove('hidden');
+        row.classList.add('flex');
+        addBtn.classList.add('hidden');
+        display.textContent = range;
+        badge.innerHTML = renderActivityDateKindBadge(act);
+      } else {
+        row.classList.add('hidden');
+        row.classList.remove('flex');
+        addBtn.classList.remove('hidden');
+        display.textContent = '';
+        badge.innerHTML = '';
+      }
+    }
+
     // ==================== View Switching ====================
     function showActivitiesView() {
       document.getElementById('view-activities').classList.remove('hidden');
@@ -934,11 +1176,22 @@
           card.className = 'hk-card border border-slate-100 p-4 cursor-pointer active:scale-[0.985] transition-all hover:border-emerald-200';
           card.onclick = () => selectActivity(activity.id);
           
+          const dateRange = formatActivityDateRange(activity);
+          const dateKindBadge = renderActivityDateKindBadge(activity, 'xs');
+
           card.innerHTML = `
             <div class="flex justify-between items-start">
-              <div class="font-semibold text-lg leading-tight pr-3">${escapeHtml(activity.name)}</div>
+              <div class="min-w-0 pr-3">
+                <div class="font-semibold text-lg leading-tight">${escapeHtml(activity.name)}</div>
+                ${dateRange ? `
+                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                  <i class="fa-solid fa-calendar-days text-emerald-400 text-[10px]"></i>
+                  <span>${escapeHtml(dateRange)}</span>
+                  ${dateKindBadge}
+                </div>` : ''}
+              </div>
               <button onclick="event.stopImmediatePropagation(); deleteActivity('${activity.id}');" 
-                      class="w-8 h-8 -mr-1 -mt-1 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl">
+                      class="w-8 h-8 -mr-1 -mt-1 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shrink-0">
                 <i class="fa-solid fa-trash text-xs"></i>
               </button>
             </div>
@@ -976,7 +1229,8 @@
     function createQuickActivity() {
       const input = document.getElementById('quick-create-input');
       const name = input.value.trim() || '新活動';
-      createNewActivity(name);
+      const today = getTodayISODate();
+      createNewActivity(name, today, today);
       input.value = '';
     }
 
@@ -986,6 +1240,7 @@
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       input.value = '';
+      resetCreateModalDates();
       setTimeout(() => input.focus(), 80);
     }
 
@@ -998,14 +1253,19 @@
     function createActivityFromModal() {
       const input = document.getElementById('modal-activity-name');
       const name = input.value.trim() || '新活動';
+      const dates = readCreateModalDates();
       hideCreateModal();
-      createNewActivity(name);
+      createNewActivity(name, dates.dateStart, dates.dateEnd);
     }
 
-    function createNewActivity(name) {
+    function createNewActivity(name, dateStart = null, dateEnd = null) {
+      const today = getTodayISODate();
+      const dates = normalizeActivityDates(dateStart || today, dateEnd || today);
       const newAct = {
         id: generateId(),
         name: name,
+        dateStart: dates.dateStart,
+        dateEnd: dates.dateEnd,
         participants: [],
         expenses: [],
         fundTransfers: [],
@@ -1914,8 +2174,9 @@
         return;
       }
       
-      // Header name
+      // Header name + date
       document.getElementById('activity-name-display').textContent = act.name;
+      renderActivityDateDisplay();
       
       // Participants + form options
       renderParticipants();
@@ -1966,7 +2227,13 @@
       const total = act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
       const divider = '────────────────';
 
+      const dateRange = formatActivityDateRange(act);
+      const dateKind = getActivityDateKind(act);
+
       let text = `📊 【圓子基金】${act.name}\n`;
+      if (dateRange) {
+        text += `📅 ${dateRange}${dateKind ? `（${dateKind.label}）` : ''}\n`;
+      }
       text += `${divider}\n`;
       text += `💰 總開支：${formatMoney(total)}\n`;
       text += `🐷 圓子基金餘額：${formatMoney(fundBalance)}\n`;
@@ -2239,6 +2506,10 @@
       return {
         id: act.id,
         name: act.name,
+        dateStart: act.dateStart || null,
+        dateEnd: act.dateEnd || null,
+        dayCount: getActivityDayCount(act),
+        dateKind: getActivityDateKind(act)?.label || null,
         participants: [...act.participants],
         expenseCount: act.expenses.length,
         totalExpenses: Math.round(act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100) / 100,
@@ -2307,6 +2578,11 @@
         text += `\n${divider}\n`;
         text += `🎯 目前活動：${focus.name}\n`;
         text += `${sub}\n`;
+        if (focus.dateStart) {
+          text += `日期：${formatActivityDateRange({ dateStart: focus.dateStart, dateEnd: focus.dateEnd })}`;
+          if (focus.dateKind) text += `（${focus.dateKind}）`;
+          text += `\n`;
+        }
         text += `參加者：${focus.participants.join('、') || '（無）'}\n`;
         text += `總開支：${formatMoney(focus.totalExpenses)}（${focus.expenseCount} 筆）\n`;
         text += `結餘總和（應為 0）：${focus.balanceSum}\n\n`;
@@ -2399,7 +2675,7 @@
     function showHelp() {
       const msg = `圓子基金 使用小貼士：
 
-1. 建立活動（例如「唱K + 食飯」）
+1. 建立活動（例如「唱K + 食飯」），可選填日期或日期範圍
 2. 加入所有朋友名字
 3. 新增每筆開支：誰俾錢、幾多錢、項目、分俾邊啲人
 4. 系統會自動計算每個人結餘同最少還款方案
