@@ -472,6 +472,19 @@
             </div>
           </div>
         </div>
+
+        <!-- Person Breakdown -->
+        <div class="hk-card border border-slate-100 p-5 mt-4">
+          <div class="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
+            <i class="fa-solid fa-table-list text-emerald-500"></i>
+            <span>每人明細（已付 / 應付 / 結餘）</span>
+          </div>
+          <p class="text-[10px] text-slate-400 mb-3">結餘 = 已付 − 應付。正數代表應收，負數代表應俾其他人。</p>
+          <div id="person-breakdown-list" class="space-y-2">
+            <!-- Populated by JS -->
+          </div>
+          <div id="person-breakdown-empty" class="hidden text-sm text-slate-400 py-2">暫未有數據</div>
+        </div>
         
         <div class="text-[10px] text-center text-slate-400 mt-3">
           資料只儲存喺你嘅瀏覽器（localStorage）。關閉頁面後仍然存在。
@@ -689,7 +702,7 @@
     const STORAGE_KEY = 'yuenzifund_activities';
     const FUND_KEY = 'yuenzifund_fund_balance';
     const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
-    const APP_VERSION = '1.1.0';
+    const APP_VERSION = '1.2.0';
 
     // ==================== Storage ====================
     function loadFromStorage() {
@@ -1436,8 +1449,32 @@
       empty.classList.add('hidden');
       
       act.expenses.forEach(exp => {
-        const share = exp.splitWith.length > 0 ? (exp.amount / exp.splitWith.length) : 0;
-        
+        const { fundPaid, amountToSplit, people, shares } = getExpenseSplitDetails(exp);
+        const payerShare = shares[exp.payer] || 0;
+        const payerInSplit = people.includes(exp.payer);
+        let payerLine = '';
+
+        if (amountToSplit > 0.005 && exp.payer) {
+          if (payerInSplit && payerShare > 0) {
+            const netAdvance = Math.round((amountToSplit - payerShare) * 100) / 100;
+            payerLine = `
+              <div class="mt-1.5 text-[10px] text-amber-800 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-xl leading-relaxed">
+                <i class="fa-solid fa-wallet mr-1 text-amber-500"></i>
+                <span class="font-medium">${escapeHtml(exp.payer)}</span> 已付 ${formatMoney(exp.amount)}，抵扣自己份 ${formatMoney(payerShare)}，淨幫墊 ${formatMoney(netAdvance)}
+              </div>`;
+          } else if (!payerInSplit) {
+            payerLine = `
+              <div class="mt-1.5 text-[10px] text-amber-800 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-xl leading-relaxed">
+                <i class="fa-solid fa-wallet mr-1 text-amber-500"></i>
+                <span class="font-medium">${escapeHtml(exp.payer)}</span> 已付 ${formatMoney(exp.amount)}，全額幫墊 ${formatMoney(amountToSplit)}（唔計自己份）
+              </div>`;
+          }
+        }
+
+        const splitLabel = amountToSplit <= 0.005
+          ? '基金全額支付，無需分帳'
+          : `分 ${people.length} 人 • ${formatSharesDisplay(shares, people)}`;
+
         const card = document.createElement('div');
         card.className = 'expense-card bg-slate-50 border border-slate-100 rounded-2xl p-3.5 flex gap-3 items-start';
         
@@ -1454,17 +1491,19 @@
               <div class="text-emerald-600 font-medium tabular-nums">
                 ${formatMoney(exp.amount)}
               </div>
-              ${exp.fundPaid > 0.005 ? `
+              ${fundPaid > 0.005 ? `
               <div class="inline-flex items-center px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-xl text-[10px] font-medium">
                 <i class="fa-solid fa-piggy-bank mr-1"></i>
-                <span>基金 ${formatMoney(exp.fundPaid)}</span>
+                <span>基金 ${formatMoney(fundPaid)}</span>
               </div>` : ''}
             </div>
             
-            <div class="mt-1.5 text-xs text-slate-500">
-              分 ${exp.splitWith.length} 人（每人約 <span class="font-medium tabular-nums">${formatMoney(share)}</span>）
-              <span class="text-slate-400">• ${exp.splitWith.map(escapeHtml).join('、')}</span>
+            <div class="mt-1.5 text-xs text-slate-500 leading-relaxed">
+              ${amountToSplit > 0.005 ? `<span>分帳 ${formatMoney(amountToSplit)} • </span>` : ''}
+              <span class="font-medium">${splitLabel}</span>
+              <span class="text-slate-400 block sm:inline sm:ml-1">• ${people.map(escapeHtml).join('、')}</span>
             </div>
+            ${payerLine}
           </div>
           
           <div class="flex flex-col gap-1 items-end pt-0.5 shrink-0">
@@ -1484,6 +1523,40 @@
     }
 
     // ==================== Settlement Logic ====================
+    // Largest remainder：將分帳金額拆成整數毫子，確保加總完全一致
+    function splitAmountEvenly(amount, people) {
+      if (!people || people.length === 0) return {};
+      const totalCents = Math.round((Number(amount) || 0) * 100);
+      const n = people.length;
+      const baseCents = Math.floor(totalCents / n);
+      const remainder = totalCents % n;
+      const shares = {};
+      people.forEach((name, i) => {
+        shares[name] = (baseCents + (i < remainder ? 1 : 0)) / 100;
+      });
+      return shares;
+    }
+
+    function getExpenseSplitDetails(exp) {
+      const fundPaid = Number(exp.fundPaid) || 0;
+      const amount = Number(exp.amount) || 0;
+      const amountToSplit = Math.max(0, amount - fundPaid);
+      const people = exp.splitWith || [];
+      const shares = people.length > 0 ? splitAmountEvenly(amountToSplit, people) : {};
+      return { fundPaid, amount, amountToSplit, people, shares };
+    }
+
+    function formatSharesDisplay(shares, people) {
+      if (!people.length) return '';
+      const values = people.map(p => shares[p] || 0);
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      if (Math.abs(min - max) < 0.005) {
+        return `每人 ${formatMoney(min)}`;
+      }
+      return people.map(p => `${p} ${formatMoney(shares[p])}`).join('、');
+    }
+
     function computeBalances(act) {
       const balances = {};
       const allPeople = new Set(act.participants);
@@ -1498,25 +1571,52 @@
       act.expenses.forEach(exp => {
         if (!exp.splitWith || exp.splitWith.length === 0) return;
         
-        const fundPaid = Number(exp.fundPaid) || 0;
-        const amountToSplit = Math.max(0, exp.amount - fundPaid);
-        
-        if (amountToSplit <= 0.005) return; // 基金全額支付，無需人與人之間結算
-        
-        const share = amountToSplit / exp.splitWith.length;
+        const { amountToSplit, shares } = getExpenseSplitDetails(exp);
+        if (amountToSplit <= 0.005) return;
         
         exp.splitWith.forEach(p => {
-          balances[p] = (balances[p] || 0) - share;
+          balances[p] = (balances[p] || 0) - shares[p];
         });
         balances[exp.payer] = (balances[exp.payer] || 0) + amountToSplit;
       });
       
-      // Round to cents
       Object.keys(balances).forEach(k => {
         balances[k] = Math.round(balances[k] * 100) / 100;
       });
       
       return balances;
+    }
+
+    function computePersonSummaries(act) {
+      const people = new Set(act.participants);
+      act.expenses.forEach(e => {
+        people.add(e.payer);
+        e.splitWith.forEach(p => people.add(p));
+      });
+
+      const paid = {};
+      const owed = {};
+      people.forEach(p => { paid[p] = 0; owed[p] = 0; });
+
+      act.expenses.forEach(exp => {
+        if (!exp.splitWith || exp.splitWith.length === 0) return;
+        const { amountToSplit, shares } = getExpenseSplitDetails(exp);
+        if (amountToSplit <= 0.005) return;
+
+        paid[exp.payer] = (paid[exp.payer] || 0) + (Number(exp.amount) || 0);
+        exp.splitWith.forEach(p => {
+          owed[p] = (owed[p] || 0) + shares[p];
+        });
+      });
+
+      const balances = computeBalances(act);
+
+      return [...people].map(name => ({
+        name,
+        paid: Math.round((paid[name] || 0) * 100) / 100,
+        owed: Math.round((owed[name] || 0) * 100) / 100,
+        balance: balances[name] || 0
+      })).sort((a, b) => b.balance - a.balance);
     }
 
     function ensureFundTransfers(act) {
@@ -1743,6 +1843,57 @@
       updateFundTransferButtonState();
     }
 
+    function renderPersonBreakdown(act) {
+      const container = document.getElementById('person-breakdown-list');
+      const empty = document.getElementById('person-breakdown-empty');
+      if (!container || !empty) return;
+
+      container.innerHTML = '';
+      const summaries = computePersonSummaries(act);
+
+      if (summaries.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      summaries.forEach(({ name, paid, owed, balance }) => {
+        const abs = Math.abs(balance);
+        const isSettled = abs < 0.01;
+        const isPositive = balance >= 0.005;
+
+        const row = document.createElement('div');
+        row.className = `px-3 py-3 rounded-2xl border ${isSettled ? 'bg-slate-50 border-slate-100' : isPositive ? 'bg-emerald-50/50 border-emerald-100' : 'bg-red-50/40 border-red-100'}`;
+
+        row.innerHTML = `
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div class="font-semibold text-slate-800">${escapeHtml(name)}</div>
+            <div class="text-right shrink-0">
+              <div class="font-bold tabular-nums ${isSettled ? 'text-slate-500' : isPositive ? 'text-emerald-700' : 'text-red-600'}">
+                ${isSettled ? formatMoney(0) : `${isPositive ? '+' : '−'}${formatMoney(abs)}`}
+              </div>
+              <div class="text-[10px] ${isSettled ? 'text-slate-400' : isPositive ? 'text-emerald-600' : 'text-red-500'}">
+                ${isSettled ? '已兩清' : isPositive ? '應收' : '應俾'}
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-[11px]">
+            <div class="px-2.5 py-1.5 rounded-xl bg-white/80 border border-slate-100">
+              <div class="text-slate-400">已付</div>
+              <div class="font-semibold tabular-nums text-slate-700 mt-0.5">${formatMoney(paid)}</div>
+            </div>
+            <div class="px-2.5 py-1.5 rounded-xl bg-white/80 border border-slate-100">
+              <div class="text-slate-400">應付份額</div>
+              <div class="font-semibold tabular-nums text-slate-700 mt-0.5">${formatMoney(owed)}</div>
+            </div>
+          </div>
+          ${!isSettled ? `<div class="text-[10px] text-slate-400 mt-1.5 tabular-nums">${formatMoney(paid)} − ${formatMoney(owed)} = ${isPositive ? '+' : '−'}${formatMoney(abs)}</div>` : ''}
+        `;
+
+        container.appendChild(row);
+      });
+    }
+
     function renderSettlement() {
       const act = getCurrentActivity();
       if (!act) return;
@@ -1752,6 +1903,7 @@
       
       renderBalances(balances);
       renderSettlements(act);
+      renderPersonBreakdown(act);
     }
 
     // ==================== Main Detail Render ====================
@@ -1818,6 +1970,17 @@
       text += `${divider}\n`;
       text += `💰 總開支：${formatMoney(total)}\n`;
       text += `🐷 圓子基金餘額：${formatMoney(fundBalance)}\n`;
+      text += `${divider}\n`;
+      text += '【每人明細】\n';
+      computePersonSummaries(act).forEach(({ name, paid, owed, balance }) => {
+        const abs = Math.abs(balance);
+        if (abs < 0.01) {
+          text += `${name}：已付 ${formatMoney(paid)}，應付 ${formatMoney(owed)}，已兩清 ✅\n`;
+        } else {
+          const sign = balance >= 0.005 ? '應收' : '應俾';
+          text += `${name}：已付 ${formatMoney(paid)}，應付 ${formatMoney(owed)}，${sign} ${formatMoney(abs)}\n`;
+        }
+      });
       text += `${divider}\n`;
       text += '【每人結餘】\n';
       Object.entries(balances).sort((a, b) => b[1] - a[1]).forEach(([n, v]) => {
@@ -2048,18 +2211,19 @@
 
     function buildExpenseBreakdown(act) {
       return act.expenses.map(exp => {
-        const fundPaid = Number(exp.fundPaid) || 0;
-        const amountToSplit = Math.max(0, exp.amount - fundPaid);
-        const share = exp.splitWith.length > 0 ? amountToSplit / exp.splitWith.length : 0;
+        const { fundPaid, amount, amountToSplit, people, shares } = getExpenseSplitDetails(exp);
+        const payerShare = shares[exp.payer] || 0;
         return {
           id: exp.id,
           description: exp.description,
           payer: exp.payer,
-          amount: Number(exp.amount) || 0,
+          amount,
           fundPaid,
           amountToSplit: Math.round(amountToSplit * 100) / 100,
-          splitWith: [...exp.splitWith],
-          sharePerPerson: Math.round(share * 100) / 100,
+          splitWith: [...people],
+          sharesPerPerson: { ...shares },
+          payerShare: Math.round(payerShare * 100) / 100,
+          payerNetAdvance: Math.round((amountToSplit - payerShare) * 100) / 100,
           createdAt: exp.createdAt || null
         };
       });
@@ -2070,6 +2234,7 @@
       const settlements = computeSettlements(balances);
       const pending = getPendingSettlements(act);
       const transferred = ensureFundTransfers(act);
+      const personSummaries = computePersonSummaries(act);
 
       return {
         id: act.id,
@@ -2078,6 +2243,7 @@
         expenseCount: act.expenses.length,
         totalExpenses: Math.round(act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100) / 100,
         expenses: buildExpenseBreakdown(act),
+        personSummaries,
         computedBalances: balances,
         allSettlements: settlements,
         pendingSettlements: pending,
@@ -2151,8 +2317,15 @@
           text += `   付款人：${e.payer} | 金額：${formatMoney(e.amount)}`;
           if (e.fundPaid > 0.005) text += ` | 基金支付：${formatMoney(e.fundPaid)}`;
           text += `\n`;
-          text += `   需分帳金額：${formatMoney(e.amountToSplit)} ÷ ${e.splitWith.length} 人 = 每人 ${formatMoney(e.sharePerPerson)}\n`;
-          text += `   分俾：${e.splitWith.join('、')}\n`;
+          text += `   分帳 ${formatMoney(e.amountToSplit)}：${e.splitWith.map(p => `${p} ${formatMoney(e.sharesPerPerson[p])}`).join('、')}\n`;
+          if (e.payerShare > 0.005) {
+            text += `   ${e.payer} 已付抵扣自己份 ${formatMoney(e.payerShare)}，淨幫墊 ${formatMoney(e.payerNetAdvance)}\n`;
+          }
+        });
+
+        text += `\n【每人明細（已付 / 應付 / 結餘）】\n`;
+        (focus.personSummaries || []).forEach(p => {
+          text += `  ${p.name}：已付 ${formatMoney(p.paid)}，應付 ${formatMoney(p.owed)}，結餘 ${p.balance >= 0 ? '+' : ''}${p.balance.toFixed(2)}\n`;
         });
 
         text += `\n【每人結餘（正=應收，負=應俾）】\n`;
