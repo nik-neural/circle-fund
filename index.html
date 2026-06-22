@@ -87,6 +87,15 @@
     .empty-state {
       background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
     }
+
+    input[type="date"] {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .modal-sheet {
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -226,11 +235,13 @@
             <i class="fa-solid fa-pen text-sm"></i>
           </button>
         </div>
-        <div id="activity-date-row" class="hidden mt-1.5 flex items-center gap-2">
+        <div id="activity-date-row" class="hidden mt-2">
           <button type="button" onclick="showEditDatesModal()"
-                  class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-emerald-600 transition-colors">
-            <i class="fa-solid fa-calendar-days text-emerald-500 text-xs"></i>
-            <span id="activity-date-display" class="font-medium"></span>
+                  class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500 hover:text-emerald-600 transition-colors text-left">
+            <span class="inline-flex items-center gap-1.5">
+              <i class="fa-solid fa-calendar-days text-emerald-500 text-xs"></i>
+              <span id="activity-date-display" class="font-medium"></span>
+            </span>
             <span id="activity-date-kind-badge"></span>
             <i class="fa-solid fa-pen text-[10px] text-slate-400"></i>
           </button>
@@ -516,7 +527,7 @@
   <div id="create-modal" onclick="if (event.target.id === 'create-modal') hideCreateModal()" 
        class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[100]">
     <div onclick="event.stopImmediatePropagation()" 
-         class="w-full sm:w-[440px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+         class="modal-sheet w-full sm:w-[440px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
       <div class="flex justify-between items-center mb-5">
         <div class="font-bold text-xl">建立新活動</div>
         <button onclick="hideCreateModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
@@ -529,21 +540,21 @@
         <p class="text-xs text-slate-500 mt-1.5">之後可以隨時改名同加入朋友</p>
       </div>
 
-      <div class="mt-4">
-        <label class="block text-sm font-semibold mb-1.5 text-slate-600">日期 <span class="font-normal text-slate-400">（預設今日）</span></label>
-        <div class="grid grid-cols-2 gap-2">
+      <div class="mt-5">
+        <label class="block text-sm font-semibold mb-2 text-slate-600">日期 <span class="font-normal text-slate-400">（預設今日）</span></label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <div class="text-[10px] text-slate-400 mb-1 px-0.5">開始</div>
+            <div class="text-[10px] text-slate-400 mb-1.5 px-0.5">開始</div>
             <input id="modal-date-start" type="date"
-                   class="w-full border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+                   class="w-full min-w-0 border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
           </div>
           <div>
-            <div class="text-[10px] text-slate-400 mb-1 px-0.5">結束</div>
+            <div class="text-[10px] text-slate-400 mb-1.5 px-0.5">結束</div>
             <input id="modal-date-end" type="date"
-                   class="w-full border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+                   class="w-full min-w-0 border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
           </div>
         </div>
-        <p class="text-[10px] text-slate-400 mt-1.5">預設今日，可改。跨多日會自動顯示為外遊。</p>
+        <p class="text-[10px] text-slate-400 mt-2">預設今日，可改。跨多日會自動顯示為外遊。</p>
       </div>
       
       <div class="mt-6 flex gap-3">
@@ -559,33 +570,35 @@
   <div id="edit-dates-modal" onclick="if (event.target.id === 'edit-dates-modal') hideEditDatesModal()" 
        class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[105]">
     <div onclick="event.stopImmediatePropagation()" 
-         class="w-full sm:w-[400px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+         class="modal-sheet w-full sm:w-[400px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
       <div class="flex justify-between items-center mb-5">
         <div class="font-bold text-xl">活動日期</div>
         <button onclick="hideEditDatesModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
       </div>
 
-      <div class="grid grid-cols-2 gap-2">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <div class="text-[10px] text-slate-400 mb-1 px-0.5">開始</div>
+          <div class="text-[10px] text-slate-400 mb-1.5 px-0.5">開始</div>
           <input id="edit-date-start" type="date"
-                 class="w-full border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+                 class="w-full min-w-0 border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
         </div>
         <div>
-          <div class="text-[10px] text-slate-400 mb-1 px-0.5">結束</div>
+          <div class="text-[10px] text-slate-400 mb-1.5 px-0.5">結束</div>
           <input id="edit-date-end" type="date"
-                 class="w-full border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+                 class="w-full min-w-0 border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
         </div>
       </div>
-      <p class="text-[10px] text-slate-400 mt-2">只填開始 = 單日活動。跨多日 = 外遊。</p>
+      <p class="text-[10px] text-slate-400 mt-2.5">只填開始 = 單日活動。跨多日 = 外遊。</p>
 
-      <div class="mt-6 flex gap-3">
-        <button onclick="clearActivityDates()" 
-                class="h-12 px-4 rounded-2xl border border-slate-200 font-semibold text-sm text-slate-500">清除</button>
-        <button onclick="hideEditDatesModal()" 
-                class="flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+      <div class="mt-6 space-y-2 sm:space-y-0 sm:flex sm:gap-3">
         <button onclick="saveActivityDates()" 
-                class="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm">儲存</button>
+                class="w-full sm:flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm order-first sm:order-last">儲存</button>
+        <div class="grid grid-cols-2 gap-2 sm:contents">
+          <button onclick="hideEditDatesModal()" 
+                  class="h-12 rounded-2xl border border-slate-200 font-semibold text-sm sm:flex-1">取消</button>
+          <button onclick="clearActivityDates()" 
+                  class="h-12 rounded-2xl border border-slate-200 font-semibold text-sm text-slate-500 sm:w-auto sm:px-5">清除</button>
+        </div>
       </div>
     </div>
   </div>
@@ -770,7 +783,7 @@
     const STORAGE_KEY = 'yuenzifund_activities';
     const FUND_KEY = 'yuenzifund_fund_balance';
     const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
-    const APP_VERSION = '1.3.1';
+    const APP_VERSION = '1.3.2';
 
     // ==================== Storage ====================
     function loadFromStorage() {
@@ -1089,13 +1102,11 @@
       const range = formatActivityDateRange(act);
       if (range) {
         row.classList.remove('hidden');
-        row.classList.add('flex');
         addBtn.classList.add('hidden');
         display.textContent = range;
         badge.innerHTML = renderActivityDateKindBadge(act);
       } else {
         row.classList.add('hidden');
-        row.classList.remove('flex');
         addBtn.classList.remove('hidden');
         display.textContent = '';
         badge.innerHTML = '';
