@@ -119,6 +119,19 @@
       text-align: left;
     }
 
+    @media (max-width: 639px) {
+      .date-input {
+        height: 2.75rem;
+        min-height: 2.75rem;
+        padding: 0 0.5rem;
+        font-size: 0.75rem;
+      }
+
+      .date-fields-row {
+        gap: 0.5rem;
+      }
+    }
+
     .modal-overlay {
       z-index: 300;
     }
@@ -583,12 +596,12 @@
 
       <div class="mt-5">
         <label class="block text-sm font-semibold mb-2 text-slate-600">日期 <span class="font-normal text-slate-400">（預設今日）</span></label>
-        <div class="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3">
-          <div class="date-field-group">
+        <div class="date-fields-row grid grid-cols-2 gap-2 sm:gap-3">
+          <div class="date-field-group min-w-0">
             <div class="text-[10px] text-slate-400 px-0.5">開始</div>
             <input id="modal-date-start" type="date" class="date-input">
           </div>
-          <div class="date-field-group">
+          <div class="date-field-group min-w-0">
             <div class="text-[10px] text-slate-400 px-0.5">結束</div>
             <input id="modal-date-end" type="date" class="date-input">
           </div>
@@ -615,12 +628,12 @@
         <button onclick="hideEditDatesModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
       </div>
 
-      <div class="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3">
-        <div class="date-field-group">
+      <div class="date-fields-row grid grid-cols-2 gap-2 sm:gap-3">
+        <div class="date-field-group min-w-0">
           <div class="text-[10px] text-slate-400 px-0.5">開始</div>
           <input id="edit-date-start" type="date" class="date-input">
         </div>
-        <div class="date-field-group">
+        <div class="date-field-group min-w-0">
           <div class="text-[10px] text-slate-400 px-0.5">結束</div>
           <input id="edit-date-end" type="date" class="date-input">
         </div>
@@ -820,7 +833,7 @@
     const STORAGE_KEY = 'yuenzifund_activities';
     const FUND_KEY = 'yuenzifund_fund_balance';
     const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
-    const APP_VERSION = '1.3.3';
+    const APP_VERSION = '1.3.4';
 
     // ==================== Storage ====================
     function loadFromStorage() {
