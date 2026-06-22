@@ -88,13 +88,54 @@
       background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
     }
 
-    input[type="date"] {
+    .date-field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .date-input {
+      width: 100%;
       min-width: 0;
-      max-width: 100%;
+      height: 3rem;
+      min-height: 3rem;
+      padding: 0 0.75rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      background: #fff;
+      box-sizing: border-box;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .date-input:focus {
+      outline: none;
+      border-color: #34d399;
+    }
+
+    input[type="date"]::-webkit-date-and-time-value {
+      text-align: left;
+    }
+
+    .modal-overlay {
+      z-index: 300;
     }
 
     .modal-sheet {
+      position: relative;
+      z-index: 1;
+      max-height: min(88vh, 640px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #fff;
       padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
+
+    body.modal-open {
+      overflow: hidden;
+      touch-action: none;
     }
   </style>
 </head>
@@ -525,7 +566,7 @@
 
   <!-- Create Activity Modal -->
   <div id="create-modal" onclick="if (event.target.id === 'create-modal') hideCreateModal()" 
-       class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[100]">
+       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
     <div onclick="event.stopImmediatePropagation()" 
          class="modal-sheet w-full sm:w-[440px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
       <div class="flex justify-between items-center mb-5">
@@ -542,16 +583,14 @@
 
       <div class="mt-5">
         <label class="block text-sm font-semibold mb-2 text-slate-600">日期 <span class="font-normal text-slate-400">（預設今日）</span></label>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <div class="text-[10px] text-slate-400 mb-1.5 px-0.5">開始</div>
-            <input id="modal-date-start" type="date"
-                   class="w-full min-w-0 border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+        <div class="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3">
+          <div class="date-field-group">
+            <div class="text-[10px] text-slate-400 px-0.5">開始</div>
+            <input id="modal-date-start" type="date" class="date-input">
           </div>
-          <div>
-            <div class="text-[10px] text-slate-400 mb-1.5 px-0.5">結束</div>
-            <input id="modal-date-end" type="date"
-                   class="w-full min-w-0 border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+          <div class="date-field-group">
+            <div class="text-[10px] text-slate-400 px-0.5">結束</div>
+            <input id="modal-date-end" type="date" class="date-input">
           </div>
         </div>
         <p class="text-[10px] text-slate-400 mt-2">預設今日，可改。跨多日會自動顯示為外遊。</p>
@@ -568,36 +607,34 @@
 
   <!-- Edit Activity Dates Modal -->
   <div id="edit-dates-modal" onclick="if (event.target.id === 'edit-dates-modal') hideEditDatesModal()" 
-       class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[105]">
+       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
     <div onclick="event.stopImmediatePropagation()" 
-         class="modal-sheet w-full sm:w-[400px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
-      <div class="flex justify-between items-center mb-5">
+         class="modal-sheet w-full sm:w-[400px] rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-2xl">
+      <div class="flex justify-between items-center mb-5 shrink-0">
         <div class="font-bold text-xl">活動日期</div>
         <button onclick="hideEditDatesModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <div class="text-[10px] text-slate-400 mb-1.5 px-0.5">開始</div>
-          <input id="edit-date-start" type="date"
-                 class="w-full min-w-0 border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+      <div class="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-3">
+        <div class="date-field-group">
+          <div class="text-[10px] text-slate-400 px-0.5">開始</div>
+          <input id="edit-date-start" type="date" class="date-input">
         </div>
-        <div>
-          <div class="text-[10px] text-slate-400 mb-1.5 px-0.5">結束</div>
-          <input id="edit-date-end" type="date"
-                 class="w-full min-w-0 border border-slate-200 focus:border-emerald-400 h-11 rounded-2xl px-3 text-sm outline-none">
+        <div class="date-field-group">
+          <div class="text-[10px] text-slate-400 px-0.5">結束</div>
+          <input id="edit-date-end" type="date" class="date-input">
         </div>
       </div>
-      <p class="text-[10px] text-slate-400 mt-2.5">只填開始 = 單日活動。跨多日 = 外遊。</p>
+      <p class="text-[10px] text-slate-400 mt-4">只填開始 = 單日活動。跨多日 = 外遊。</p>
 
-      <div class="mt-6 space-y-2 sm:space-y-0 sm:flex sm:gap-3">
+      <div class="mt-6 pt-2 border-t border-slate-100 flex flex-col gap-2 shrink-0">
         <button onclick="saveActivityDates()" 
-                class="w-full sm:flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm order-first sm:order-last">儲存</button>
-        <div class="grid grid-cols-2 gap-2 sm:contents">
+                class="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm">儲存</button>
+        <div class="grid grid-cols-2 gap-2">
           <button onclick="hideEditDatesModal()" 
-                  class="h-12 rounded-2xl border border-slate-200 font-semibold text-sm sm:flex-1">取消</button>
+                  class="h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
           <button onclick="clearActivityDates()" 
-                  class="h-12 rounded-2xl border border-slate-200 font-semibold text-sm text-slate-500 sm:w-auto sm:px-5">清除</button>
+                  class="h-12 rounded-2xl border border-slate-200 font-semibold text-sm text-slate-500">清除</button>
         </div>
       </div>
     </div>
@@ -605,7 +642,7 @@
 
   <!-- 圓子基金管理 Modal -->
   <div id="fund-modal" onclick="if (event.target.id === 'fund-modal') hideFundManagerModal()" 
-       class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[110]">
+       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
     <div onclick="event.stopImmediatePropagation()" 
          class="w-full sm:w-[460px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
       
@@ -716,7 +753,7 @@
 
   <!-- Bug Report Modal -->
   <div id="bug-report-modal" onclick="if (event.target.id === 'bug-report-modal') hideBugReportModal()" 
-       class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[120]">
+       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
     <div onclick="event.stopImmediatePropagation()" 
          class="w-full sm:w-[520px] max-h-[90vh] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-xl">
       
@@ -783,7 +820,7 @@
     const STORAGE_KEY = 'yuenzifund_activities';
     const FUND_KEY = 'yuenzifund_fund_balance';
     const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
-    const APP_VERSION = '1.3.2';
+    const APP_VERSION = '1.3.3';
 
     // ==================== Storage ====================
     function loadFromStorage() {
@@ -841,11 +878,24 @@
       if (modalVal) modalVal.textContent = formatted;
     }
 
+    let openModalCount = 0;
+
+    function lockBodyScroll() {
+      openModalCount++;
+      document.body.classList.add('modal-open');
+    }
+
+    function unlockBodyScroll() {
+      openModalCount = Math.max(0, openModalCount - 1);
+      if (openModalCount === 0) document.body.classList.remove('modal-open');
+    }
+
     function showFundManagerModal() {
       const modal = document.getElementById('fund-modal');
       if (!modal) return;
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      lockBodyScroll();
       updateFundDisplays();
       // focus first input
       setTimeout(() => {
@@ -859,6 +909,7 @@
       if (modal) {
         modal.classList.remove('flex');
         modal.classList.add('hidden');
+        unlockBodyScroll();
       }
     }
 
@@ -1049,6 +1100,7 @@
       end.value = act.dateEnd || act.dateStart || today;
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      lockBodyScroll();
     }
 
     function hideEditDatesModal() {
@@ -1056,6 +1108,7 @@
       if (modal) {
         modal.classList.remove('flex');
         modal.classList.add('hidden');
+        unlockBodyScroll();
       }
     }
 
@@ -1250,6 +1303,7 @@
       const input = document.getElementById('modal-activity-name');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      lockBodyScroll();
       input.value = '';
       resetCreateModalDates();
       setTimeout(() => input.focus(), 80);
@@ -1259,6 +1313,7 @@
       const modal = document.getElementById('create-modal');
       modal.classList.remove('flex');
       modal.classList.add('hidden');
+      unlockBodyScroll();
     }
 
     function createActivityFromModal() {
@@ -2472,6 +2527,7 @@
       if (!modal) return;
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      lockBodyScroll();
       document.getElementById('bug-report-preview-wrap').classList.add('hidden');
       setTimeout(() => {
         const desc = document.getElementById('bug-report-desc');
@@ -2484,6 +2540,7 @@
       if (modal) {
         modal.classList.remove('flex');
         modal.classList.add('hidden');
+        unlockBodyScroll();
       }
     }
 
