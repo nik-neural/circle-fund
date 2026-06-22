@@ -117,6 +117,11 @@
             <i class="fa-solid fa-mobile-screen text-xs"></i>
             <span class="text-xs font-medium">手機友好</span>
           </div>
+          <button onclick="showBugReportModal()" 
+                  class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-2xl transition-colors"
+                  title="報告問題">
+            <i class="fa-solid fa-bug text-lg"></i>
+          </button>
           <button onclick="showHelp()" 
                   class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-2xl transition-colors">
             <i class="fa-solid fa-question-circle text-lg"></i>
@@ -470,6 +475,9 @@
         
         <div class="text-[10px] text-center text-slate-400 mt-3">
           資料只儲存喺你嘅瀏覽器（localStorage）。關閉頁面後仍然存在。
+          <button type="button" onclick="showBugReportModal()" class="block mx-auto mt-1 text-amber-600 hover:text-amber-700 font-medium">
+            <i class="fa-solid fa-bug mr-0.5"></i>覺得計錯數？報告問題
+          </button>
         </div>
       </div>
     </div>
@@ -612,6 +620,61 @@
     </div>
   </div>
 
+  <!-- Bug Report Modal -->
+  <div id="bug-report-modal" onclick="if (event.target.id === 'bug-report-modal') hideBugReportModal()" 
+       class="hidden fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[120]">
+    <div onclick="event.stopImmediatePropagation()" 
+         class="w-full sm:w-[520px] max-h-[90vh] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-xl">
+      
+      <div class="shrink-0 p-6 sm:p-7 pb-4 border-b border-slate-100">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-bug text-amber-500 text-xl"></i>
+              <div class="font-bold text-xl">報告問題</div>
+            </div>
+            <div class="text-xs text-slate-500 mt-1">描述你覺得邊度計錯，系統會自動附上數據方便排查</div>
+          </div>
+          <button onclick="hideBugReportModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+        </div>
+      </div>
+
+      <div class="flex-1 min-h-0 overflow-y-auto px-6 sm:px-7 py-4 space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-600 mb-1.5">問題描述（必填）</label>
+          <textarea id="bug-report-desc" rows="3" placeholder="例如：小美應收 $50 但顯示 $48.33，好似分錢計錯咗"
+                    class="w-full px-4 py-3 border border-slate-200 focus:border-amber-400 rounded-2xl text-sm outline-none resize-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-600 mb-1.5">聯絡方式（選填）</label>
+          <input id="bug-report-contact" type="text" placeholder="例如：WhatsApp / Telegram 名"
+                 class="w-full h-11 px-4 border border-slate-200 focus:border-amber-400 rounded-2xl text-sm outline-none">
+        </div>
+
+        <div class="px-3 py-2.5 rounded-2xl bg-amber-50 border border-amber-100 text-xs text-amber-800 leading-relaxed">
+          <i class="fa-solid fa-shield-halved mr-1"></i>
+          報告會包含活動、開支、結算結果同裝置資訊，<span class="font-semibold">唔會</span>自動傳送出去 — 只會複製到剪貼簿，你再 paste 畀開發者。
+        </div>
+
+        <div id="bug-report-preview-wrap" class="hidden">
+          <label class="block text-sm font-semibold text-slate-600 mb-1.5">報告預覽</label>
+          <pre id="bug-report-preview" class="text-[10px] leading-relaxed bg-slate-50 border border-slate-200 rounded-2xl p-3 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-slate-600"></pre>
+        </div>
+      </div>
+
+      <div class="shrink-0 p-6 sm:p-7 pt-4 border-t border-slate-100 flex gap-3">
+        <button onclick="hideBugReportModal()" 
+                class="flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+        <button onclick="generateAndCopyBugReport()" 
+                class="flex-1 h-12 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+          <i class="fa-solid fa-copy"></i>
+          <span>生成並複製報告</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 items-center"></div>
 
@@ -626,6 +689,7 @@
     const STORAGE_KEY = 'yuenzifund_activities';
     const FUND_KEY = 'yuenzifund_fund_balance';
     const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
+    const APP_VERSION = '1.1.0';
 
     // ==================== Storage ====================
     function loadFromStorage() {
@@ -1961,6 +2025,204 @@
       window.YUENZI = { getActivities: () => activities, getFund: () => fundBalance };
     }
 
+    // ==================== Bug Report ====================
+    function showBugReportModal() {
+      const modal = document.getElementById('bug-report-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('bug-report-preview-wrap').classList.add('hidden');
+      setTimeout(() => {
+        const desc = document.getElementById('bug-report-desc');
+        if (desc) desc.focus();
+      }, 80);
+    }
+
+    function hideBugReportModal() {
+      const modal = document.getElementById('bug-report-modal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function buildExpenseBreakdown(act) {
+      return act.expenses.map(exp => {
+        const fundPaid = Number(exp.fundPaid) || 0;
+        const amountToSplit = Math.max(0, exp.amount - fundPaid);
+        const share = exp.splitWith.length > 0 ? amountToSplit / exp.splitWith.length : 0;
+        return {
+          id: exp.id,
+          description: exp.description,
+          payer: exp.payer,
+          amount: Number(exp.amount) || 0,
+          fundPaid,
+          amountToSplit: Math.round(amountToSplit * 100) / 100,
+          splitWith: [...exp.splitWith],
+          sharePerPerson: Math.round(share * 100) / 100,
+          createdAt: exp.createdAt || null
+        };
+      });
+    }
+
+    function buildActivityDiagnostics(act) {
+      const balances = computeBalances(act);
+      const settlements = computeSettlements(balances);
+      const pending = getPendingSettlements(act);
+      const transferred = ensureFundTransfers(act);
+
+      return {
+        id: act.id,
+        name: act.name,
+        participants: [...act.participants],
+        expenseCount: act.expenses.length,
+        totalExpenses: Math.round(act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100) / 100,
+        expenses: buildExpenseBreakdown(act),
+        computedBalances: balances,
+        allSettlements: settlements,
+        pendingSettlements: pending,
+        fundTransfers: transferred.map(t => ({
+          from: t.from,
+          to: t.to,
+          amount: Number(t.amount) || 0,
+          transferredAt: t.transferredAt || null
+        })),
+        balanceSum: Math.round(Object.values(balances).reduce((s, v) => s + v, 0) * 100) / 100
+      };
+    }
+
+    function buildBugReportSnapshot(userDesc, contact) {
+      const currentAct = getCurrentActivity();
+      const snapshot = {
+        meta: {
+          app: '圓子基金',
+          version: APP_VERSION,
+          reportedAt: new Date().toISOString(),
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+          screen: `${window.screen.width}x${window.screen.height}`,
+          language: navigator.language
+        },
+        userReport: {
+          description: userDesc,
+          contact: contact || null
+        },
+        fundBalance: Math.round(fundBalance * 100) / 100,
+        currentActivityId: currentActivityId,
+        activityCount: activities.length,
+        activities: activities.map(buildActivityDiagnostics)
+      };
+
+      if (currentAct) {
+        snapshot.focusActivity = buildActivityDiagnostics(currentAct);
+      }
+
+      return snapshot;
+    }
+
+    function formatBugReportText(snapshot) {
+      const divider = '══════════════════════════════════════';
+      const sub = '──────────────────────────────────────';
+      let text = `🐛 【圓子基金 Bug Report】\n`;
+      text += `${divider}\n\n`;
+
+      text += `📋 用戶描述：\n${snapshot.userReport.description}\n`;
+      if (snapshot.userReport.contact) {
+        text += `📞 聯絡：${snapshot.userReport.contact}\n`;
+      }
+      text += `\n${sub}\n`;
+      text += `🔧 環境：v${snapshot.meta.version} | ${snapshot.meta.reportedAt}\n`;
+      text += `📱 ${snapshot.meta.screen} | ${snapshot.meta.language}\n`;
+      text += `🐷 圓子基金餘額：${formatMoney(snapshot.fundBalance)}\n`;
+      text += `📂 活動數量：${snapshot.activityCount}\n`;
+
+      const focus = snapshot.focusActivity;
+      if (focus) {
+        text += `\n${divider}\n`;
+        text += `🎯 目前活動：${focus.name}\n`;
+        text += `${sub}\n`;
+        text += `參加者：${focus.participants.join('、') || '（無）'}\n`;
+        text += `總開支：${formatMoney(focus.totalExpenses)}（${focus.expenseCount} 筆）\n`;
+        text += `結餘總和（應為 0）：${focus.balanceSum}\n\n`;
+
+        text += `【開支明細 + 分帳計算】\n`;
+        focus.expenses.forEach((e, i) => {
+          text += `${i + 1}. ${e.description}\n`;
+          text += `   付款人：${e.payer} | 金額：${formatMoney(e.amount)}`;
+          if (e.fundPaid > 0.005) text += ` | 基金支付：${formatMoney(e.fundPaid)}`;
+          text += `\n`;
+          text += `   需分帳金額：${formatMoney(e.amountToSplit)} ÷ ${e.splitWith.length} 人 = 每人 ${formatMoney(e.sharePerPerson)}\n`;
+          text += `   分俾：${e.splitWith.join('、')}\n`;
+        });
+
+        text += `\n【每人結餘（正=應收，負=應俾）】\n`;
+        Object.entries(focus.computedBalances)
+          .sort((a, b) => b[1] - a[1])
+          .forEach(([name, val]) => {
+            text += `  ${name}：${val >= 0 ? '+' : ''}${val.toFixed(2)}\n`;
+          });
+
+        if (focus.pendingSettlements.length > 0) {
+          text += `\n【待還款（最少轉帳）】\n`;
+          focus.pendingSettlements.forEach(s => {
+            text += `  ${s.from} → ${s.to}：${formatMoney(s.amount)}\n`;
+          });
+        }
+
+        if (focus.fundTransfers.length > 0) {
+          text += `\n【已由基金承擔】\n`;
+          focus.fundTransfers.forEach(t => {
+            text += `  ${t.from} → ${t.to}：${formatMoney(t.amount)}\n`;
+          });
+        }
+
+        if (focus.pendingSettlements.length === 0 && focus.fundTransfers.length === 0) {
+          text += `\n✅ 此活動已結清\n`;
+        }
+      }
+
+      if (snapshot.activityCount > 1) {
+        text += `\n${divider}\n`;
+        text += `📂 其他活動摘要\n`;
+        snapshot.activities
+          .filter(a => a.id !== snapshot.currentActivityId)
+          .forEach(a => {
+            text += `  • ${a.name}：${formatMoney(a.totalExpenses)}，${a.expenseCount} 筆，結餘總和 ${a.balanceSum}\n`;
+          });
+      }
+
+      text += `\n${divider}\n`;
+      text += `📦 完整 JSON 數據（供開發者 / AI 分析）\n`;
+      text += JSON.stringify(snapshot, null, 2);
+
+      return text;
+    }
+
+    function generateAndCopyBugReport() {
+      const descEl = document.getElementById('bug-report-desc');
+      const contactEl = document.getElementById('bug-report-contact');
+      const userDesc = (descEl?.value || '').trim();
+
+      if (!userDesc) {
+        showToast('請描述你覺得邊度計錯', 'error');
+        descEl?.focus();
+        return;
+      }
+
+      const contact = (contactEl?.value || '').trim();
+      const snapshot = buildBugReportSnapshot(userDesc, contact);
+      const reportText = formatBugReportText(snapshot);
+
+      const previewWrap = document.getElementById('bug-report-preview-wrap');
+      const preview = document.getElementById('bug-report-preview');
+      if (previewWrap && preview) {
+        preview.textContent = reportText.slice(0, 1200) + (reportText.length > 1200 ? '\n…（已截斷預覽）' : '');
+        previewWrap.classList.remove('hidden');
+      }
+
+      copyTextToClipboard(reportText, 'Bug report 已複製！請 paste 畀開發者');
+    }
+
     function showHelp() {
       const msg = `圓子基金 使用小貼士：
 
@@ -1968,6 +2230,8 @@
 2. 加入所有朋友名字
 3. 新增每筆開支：誰俾錢、幾多錢、項目、分俾邊啲人
 4. 系統會自動計算每個人結餘同最少還款方案
+
+覺得計錯數？撳右上角 🐛 圖示報告問題，複製報告 send 畀開發者。
 
 所有資料只存在你手機/電腦入面，安全可靠。`;
       alert(msg);
