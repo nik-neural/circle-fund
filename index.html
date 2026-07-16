@@ -332,7 +332,7 @@
           <button onclick="exportCurrentActivity()" 
                   class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 rounded-2xl bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366]/20 active:bg-[#25D366]/25 transition-colors font-semibold">
             <i class="fa-brands fa-whatsapp"></i>
-            <span>複製俾朋友</span>
+            <span>俾朋友接手</span>
           </button>
           <button onclick="deleteCurrentActivity()" 
                   class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 rounded-2xl text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors font-medium">
@@ -376,7 +376,7 @@
         <i class="fa-solid fa-mobile-screen text-emerald-500 text-sm mt-0.5 shrink-0"></i>
         <p class="flex-1 text-xs leading-relaxed text-emerald-700">
           呢個 app 資料只存在你自己部電話/電腦入面，唔會即時 share 畀其他人。
-          想交俾朋友接手？撳「<span class="font-semibold">複製俾朋友</span>」→ 去 WhatsApp <span class="font-semibold">貼上</span> send 就得。朋友喺活動列表撳「<span class="font-semibold">接手記帳</span>」貼返入去。
+          想交俾朋友接手？撳「<span class="font-semibold">俾朋友接手</span>」→ 去 WhatsApp <span class="font-semibold">貼上</span> send 就得。朋友喺活動列表撳「<span class="font-semibold">接手記帳</span>」貼返入去。
         </p>
         <button type="button" onclick="dismissLocalDataNotice()" aria-label="關閉提示"
                 class="w-6 h-6 -mr-1 -mt-0.5 shrink-0 flex items-center justify-center text-emerald-400 hover:text-emerald-700 hover:bg-emerald-100 rounded-lg transition-colors">
@@ -601,7 +601,7 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button id="mark-settled-btn" type="button" onclick="markSelectedSettlementsDirect()"
-                          class="min-h-10 py-2 text-sm font-semibold border border-slate-300 hover:bg-slate-50 active:bg-slate-100 rounded-2xl transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                          class="min-h-10 py-2 text-sm font-semibold rounded-2xl transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200/80 active:bg-emerald-200">
                     <i class="fa-solid fa-check shrink-0 text-xs"></i>
                     <span class="text-center leading-tight">
                       <span class="block">標記已結清</span>
@@ -933,7 +933,7 @@
 
       <div class="px-3 py-2.5 rounded-2xl bg-emerald-50 border border-emerald-100 text-xs text-emerald-700 leading-relaxed mb-5">
         <i class="fa-solid fa-circle-info mr-1"></i>
-        撳「複製俾朋友」就已經複製好，直接去 WhatsApp 貼上就得。
+        撳「俾朋友接手」就已經複製好，直接去 WhatsApp 貼上就得。
       </div>
 
       <button onclick="hideExportShareModal()" 
@@ -1013,7 +1013,7 @@
     const FUND_KEY = 'yuenzifund_fund_balance';
     const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'yuenzifund_text_size';
-    const APP_VERSION = '1.6.0';
+    const APP_VERSION = '1.6.1';
     const ACTIVITY_EXPORT_FORMAT = 'yuenzifund-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
     let pendingImportActivity = null;
@@ -2698,7 +2698,7 @@ ${SHARE_DATA_END}`;
       if (data && typeof data.name === 'string' && Array.isArray(data.expenses)) {
         return data;
       }
-      throw new Error('呢段唔似記帳資料，請確認朋友係用「複製俾朋友」send 畀你嘅 WhatsApp 訊息');
+      throw new Error('呢段唔似記帳資料，請確認朋友係用「俾朋友接手」send 畀你嘅 WhatsApp 訊息');
     }
 
     function normalizeImportedActivity(raw) {
@@ -2995,7 +2995,7 @@ ${SHARE_DATA_END}`;
       }
 
       text += `\n${divider}\n`;
-      text += `🔗 想交俾下一位接手？撳「複製俾朋友」→ WhatsApp 貼上 send 就得。接手人撳「接手記帳」貼返入去。\n`;
+      text += `🔗 想交俾下一位接手？撳「俾朋友接手」→ WhatsApp 貼上 send 就得。接手人撳「接手記帳」貼返入去。\n`;
       text += `📲 未用過圓子基金？開呢個連結：\n${SHARE_APP_URL}`;
 
       return text;
@@ -3512,7 +3512,7 @@ ${SHARE_DATA_END}`;
 建議還款：剔選後可「標記已結清」或「由基金找數」；撳錯可「還原」。
 文字太細？撳右上角文字掣，可喺 標準 / 大 / 特大 之間切換。
 
-想交俾朋友接手？撳「複製俾朋友」→ WhatsApp 貼上 send。朋友撳「接手記帳」貼返入去就得。
+想交俾朋友接手？撳「俾朋友接手」→ WhatsApp 貼上 send。朋友撳「接手記帳」貼返入去就得。
 
 覺得計錯數？撳右上角 🐛 圖示報告問題，複製報告 send 畀開發者 (Nik)。
 
