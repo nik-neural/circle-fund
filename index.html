@@ -76,6 +76,41 @@
     .settlement-row:hover {
       background-color: #f8fafc;
     }
+
+    /* 建議還款：綠色底 + 白色剔 */
+    .settlement-fund-checkbox {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 1.125rem;
+      height: 1.125rem;
+      margin: 0;
+      border-radius: 0.35rem;
+      border: 1.5px solid #6ee7b7;
+      background: #fff;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .settlement-fund-checkbox:hover {
+      border-color: #34d399;
+      background: #ecfdf5;
+    }
+
+    .settlement-fund-checkbox:checked {
+      background-color: #10b981;
+      border-color: #059669;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.2L6.5 11.2L12.5 4.8' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-size: 0.75rem 0.75rem;
+      background-position: center;
+      background-repeat: no-repeat;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+    }
+
+    .settlement-fund-checkbox:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.28);
+    }
     
     .app-container {
       max-width: 1080px;
@@ -2299,7 +2334,7 @@
         
         row.innerHTML = `
           <input type="checkbox"
-                 class="settlement-fund-checkbox w-4 h-4 accent-emerald-500 shrink-0"
+                 class="settlement-fund-checkbox shrink-0"
                  data-from="${escapeHtml(s.from)}"
                  data-to="${escapeHtml(s.to)}"
                  data-amount="${s.amount}"
