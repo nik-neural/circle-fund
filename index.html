@@ -20,6 +20,21 @@
     
     :root {
       --primary: #10b981;
+      --text-scale: 1;
+    }
+
+    html {
+      height: 100%;
+      font-size: calc(16px * var(--text-scale));
+    }
+
+    html[data-text-size="md"] { --text-scale: 1; }
+    html[data-text-size="lg"] { --text-scale: 1.125; }
+    html[data-text-size="xl"] { --text-scale: 1.25; }
+
+    @media (min-width: 1024px) {
+      html[data-text-size="md"],
+      html:not([data-text-size]) { --text-scale: 1.0625; }
     }
     
     body {
@@ -160,6 +175,21 @@
       touch-action: none;
     }
   </style>
+  <!-- Apply saved text size before paint -->
+  <script>
+    (function () {
+      try {
+        var s = localStorage.getItem('yuenzifund_text_size');
+        if (s === 'md' || s === 'lg' || s === 'xl') {
+          document.documentElement.setAttribute('data-text-size', s);
+        } else {
+          document.documentElement.setAttribute('data-text-size', 'md');
+        }
+      } catch (e) {
+        document.documentElement.setAttribute('data-text-size', 'md');
+      }
+    })();
+  </script>
 </head>
 <body class="bg-slate-50 text-slate-800">
   <!-- Header -->
@@ -185,10 +215,13 @@
             <span id="fund-balance-header" class="font-bold tabular-nums">HK$0.00</span>
           </button>
 
-          <div class="hidden sm:flex items-center gap-x-1.5 px-3 py-1.5 bg-slate-100 rounded-2xl text-slate-600">
-            <i class="fa-solid fa-mobile-screen text-xs"></i>
-            <span class="text-xs font-medium">手機友好</span>
-          </div>
+          <!-- 文字大小：標準 → 大 → 特大 -->
+          <button id="text-size-btn" type="button" onclick="cycleTextSize()"
+                  class="flex items-center gap-x-1.5 px-2.5 sm:px-3 h-9 bg-slate-100 hover:bg-slate-200 rounded-2xl text-slate-600 font-medium transition-colors"
+                  title="文字大小（點擊切換）" aria-label="切換文字大小">
+            <i class="fa-solid fa-text-height text-xs"></i>
+            <span id="text-size-label" class="text-xs font-medium">標準</span>
+          </button>
           <button onclick="showBugReportModal()" 
                   class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-2xl transition-colors"
                   title="報告問題">
@@ -554,33 +587,41 @@
               </div>
             </div>
 
-            <!-- 圓子基金模式：逐條揀選轉入 -->
+            <!-- 圓子基金模式：逐條揀選處理 -->
             <div id="fund-transfer-controls" class="mt-4 pt-4 border-t border-slate-100 hidden">
-              <div class="flex items-center justify-between mb-2">
-                <div class="text-[10px] text-emerald-700 font-medium">剔選想由基金承擔嘅還款</div>
-                <div class="flex gap-1">
-                  <button type="button" onclick="selectAllFundTransfers(true)"
-                          class="text-[10px] px-2.5 h-6 rounded-xl bg-emerald-100 text-emerald-700 font-medium active:bg-emerald-200">全選</button>
-                  <button type="button" onclick="selectAllFundTransfers(false)"
-                          class="text-[10px] px-2.5 h-6 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">取消</button>
+              <div id="fund-transfer-pending-ui">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-[10px] text-emerald-700 font-medium">剔選還款後揀處理方式</div>
+                  <div class="flex gap-1">
+                    <button type="button" onclick="selectAllFundTransfers(true)"
+                            class="text-[10px] px-2.5 h-6 rounded-xl bg-emerald-100 text-emerald-700 font-medium active:bg-emerald-200">全選</button>
+                    <button type="button" onclick="selectAllFundTransfers(false)"
+                            class="text-[10px] px-2.5 h-6 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">取消</button>
+                  </div>
                 </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button id="mark-settled-btn" type="button" onclick="markSelectedSettlementsDirect()"
+                          class="min-h-10 py-2 text-sm font-semibold border border-slate-300 hover:bg-slate-50 active:bg-slate-100 rounded-2xl transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-check shrink-0 text-xs"></i>
+                    <span class="text-center leading-tight">
+                      <span class="block">標記已結清</span>
+                      <span class="block text-[10px] font-medium opacity-80">自己轉帳</span>
+                    </span>
+                  </button>
+                  <button id="transfer-selected-fund-btn" type="button" onclick="transferSelectedSettlementsToFund()" 
+                          class="min-h-10 py-2 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-2xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-piggy-bank shrink-0 text-base leading-none"></i>
+                    <span class="text-center leading-tight">
+                      <span class="block">由基金找數</span>
+                      <span id="transfer-selected-fund-amount" class="block text-[10px] font-semibold opacity-90 tabular-nums min-h-[14px]">&nbsp;</span>
+                    </span>
+                  </button>
+                </div>
+                <div class="text-[10px] text-center text-emerald-600 mt-1.5">「標記已結清」= 大家自己轉咗；「由基金找數」= 基金代付。撳錯可喺嗰行「還原」。</div>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button onclick="markAsDirectlySettled()" 
-                        class="h-10 text-sm font-semibold border border-slate-300 hover:bg-slate-50 active:bg-slate-100 rounded-2xl transition-colors flex items-center justify-center gap-1.5">
-                  <i class="fa-solid fa-handshake text-xs"></i>
-                  <span>完全結清（自己轉帳）</span>
-                </button>
-                <button id="transfer-selected-fund-btn" onclick="transferSelectedSettlementsToFund()" 
-                        class="min-h-10 py-2 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-2xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <i class="fa-solid fa-piggy-bank shrink-0 text-base leading-none"></i>
-                  <span class="text-center leading-tight">
-                    <span class="block">轉入已選項目去基金</span>
-                    <span id="transfer-selected-fund-amount" class="block text-[10px] font-semibold opacity-90 tabular-nums min-h-[14px]">&nbsp;</span>
-                  </span>
-                </button>
+              <div id="fund-transfer-done-hint" class="hidden text-[10px] text-center text-emerald-600">
+                以上還款已處理。撳錯？每行有「還原」可撤銷。
               </div>
-              <div class="text-[10px] text-center text-emerald-600 mt-1.5">可以逐條揀，淨係轉入已剔選嘅還款去基金</div>
             </div>
           </div>
         </div>
@@ -971,10 +1012,18 @@
     const STORAGE_KEY = 'yuenzifund_activities';
     const FUND_KEY = 'yuenzifund_fund_balance';
     const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
-    const APP_VERSION = '1.5.0';
+    const TEXT_SIZE_KEY = 'yuenzifund_text_size';
+    const APP_VERSION = '1.6.0';
     const ACTIVITY_EXPORT_FORMAT = 'yuenzifund-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
     let pendingImportActivity = null;
+
+    // 文字大小：標準 / 大 / 特大
+    const TEXT_SIZE_LEVELS = [
+      { id: 'md', label: '標準' },
+      { id: 'lg', label: '大' },
+      { id: 'xl', label: '特大' },
+    ];
 
     // ==================== Storage ====================
     function loadFromStorage() {
@@ -984,6 +1033,7 @@
           activities = JSON.parse(raw);
           activities.forEach(act => {
             ensureFundTransfers(act);
+            ensureDirectSettlements(act);
             ensureActivityDates(act);
           });
         }
@@ -1065,16 +1115,20 @@
         modal.classList.add('hidden');
         unlockBodyScroll();
       }
+      const depositInput = document.getElementById('fund-deposit-input');
+      const withdrawInput = document.getElementById('fund-withdraw-input');
+      if (depositInput) depositInput.value = '';
+      if (withdrawInput) withdrawInput.value = '';
     }
 
+    /** @returns {boolean} 是否成功 */
     function adjustFund(amount, type) {
-      const before = fundBalance;
       if (type === 'deposit') {
         fundBalance += amount;
       } else {
         if (amount > fundBalance + 0.005) {
           showToast('基金餘額唔夠提取', 'error');
-          return;
+          return false;
         }
         fundBalance -= amount;
       }
@@ -1082,14 +1136,14 @@
       saveFundBalance();
       updateFundDisplays();
       showToast(`${type === 'deposit' ? '已存入' : '已提取'} ${formatMoney(amount)}`);
+      return true;
     }
 
     function quickAdjustFund(delta) {
-      if (delta > 0) {
-        adjustFund(delta, 'deposit');
-      } else {
-        adjustFund(-delta, 'withdraw');
-      }
+      const ok = delta > 0
+        ? adjustFund(delta, 'deposit')
+        : adjustFund(-delta, 'withdraw');
+      if (ok) hideFundManagerModal();
     }
 
     function depositFromInput() {
@@ -1099,8 +1153,9 @@
         showToast('請輸入有效金額', 'error');
         return;
       }
-      adjustFund(val, 'deposit');
-      input.value = '';
+      if (adjustFund(val, 'deposit')) {
+        hideFundManagerModal();
+      }
     }
 
     function withdrawFromInput() {
@@ -1110,8 +1165,9 @@
         showToast('請輸入有效金額', 'error');
         return;
       }
-      adjustFund(val, 'withdraw');
-      input.value = '';
+      if (adjustFund(val, 'withdraw')) {
+        hideFundManagerModal();
+      }
     }
 
     // ==================== Helpers ====================
@@ -1489,6 +1545,7 @@
         participants: [],
         expenses: [],
         fundTransfers: [],
+        directSettlements: [],
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -1900,6 +1957,7 @@
       
       act.expenses = [];
       act.fundTransfers = [];
+      act.directSettlements = [];
       act.updatedAt = Date.now();
       saveToStorage();
       cancelExpenseEdit();
@@ -2105,6 +2163,13 @@
       return act.fundTransfers;
     }
 
+    /** 自己轉帳已結清（唔郁基金） */
+    function ensureDirectSettlements(act) {
+      if (!act) return [];
+      if (!Array.isArray(act.directSettlements)) act.directSettlements = [];
+      return act.directSettlements;
+    }
+
     function settlementMatchKey(s) {
       const amount = Math.round((Number(s.amount) || 0) * 100) / 100;
       return `${s.from}|${s.to}|${amount.toFixed(2)}`;
@@ -2115,9 +2180,18 @@
       return ensureFundTransfers(act).some(t => settlementMatchKey(t) === key);
     }
 
+    function isSettlementDirectSettled(act, settlement) {
+      const key = settlementMatchKey(settlement);
+      return ensureDirectSettlements(act).some(t => settlementMatchKey(t) === key);
+    }
+
+    function isSettlementHandled(act, settlement) {
+      return isSettlementTransferred(act, settlement) || isSettlementDirectSettled(act, settlement);
+    }
+
     function getPendingSettlements(act) {
       const settlements = computeSettlements(computeBalances(act));
-      return settlements.filter(s => !isSettlementTransferred(act, s));
+      return settlements.filter(s => !isSettlementHandled(act, s));
     }
 
     function computeSettlements(balances) {
@@ -2215,6 +2289,7 @@
       const empty = document.getElementById('settlements-empty');
       const pending = getPendingSettlements(act);
       const transferred = ensureFundTransfers(act);
+      const direct = ensureDirectSettlements(act);
       
       container.innerHTML = '';
       
@@ -2252,7 +2327,7 @@
         container.appendChild(row);
       });
 
-      transferred.forEach(t => {
+      transferred.forEach((t, idx) => {
         const row = document.createElement('div');
         row.className = 'flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-emerald-100 bg-emerald-50';
         
@@ -2265,14 +2340,58 @@
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <div class="font-bold tabular-nums text-base text-emerald-700">${formatMoney(t.amount)}</div>
-            <span class="text-[10px] font-medium text-emerald-600 whitespace-nowrap">已由基金承擔</span>
+            <span class="text-[10px] font-medium text-emerald-600 whitespace-nowrap hidden sm:inline">已由基金找數</span>
+            <button type="button"
+                    class="undo-fund-transfer-btn shrink-0 text-[10px] sm:text-xs font-semibold px-2.5 h-7 rounded-xl bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                    title="還原呢筆基金找數"
+                    data-index="${idx}">
+              <i class="fa-solid fa-rotate-left mr-0.5"></i>還原
+            </button>
           </div>
         `;
+
+        row.querySelector('.undo-fund-transfer-btn').addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          undoFundTransfer(idx);
+        });
+        
+        container.appendChild(row);
+      });
+
+      direct.forEach((t, idx) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-teal-100 bg-teal-50';
+        
+        row.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <i class="fa-solid fa-circle-check text-teal-500 text-sm shrink-0"></i>
+            <span class="font-semibold text-red-600 shrink-0">${escapeHtml(t.from)}</span>
+            <span class="text-slate-400 text-sm px-1">要俾</span>
+            <span class="font-semibold text-emerald-700 shrink-0">${escapeHtml(t.to)}</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="font-bold tabular-nums text-base text-teal-700">${formatMoney(t.amount)}</div>
+            <span class="text-[10px] font-medium text-teal-700 whitespace-nowrap hidden sm:inline">已結清</span>
+            <button type="button"
+                    class="undo-direct-settle-btn shrink-0 text-[10px] sm:text-xs font-semibold px-2.5 h-7 rounded-xl bg-white border border-teal-200 text-teal-700 hover:bg-teal-100"
+                    title="還原呢筆已結清標記"
+                    data-index="${idx}">
+              <i class="fa-solid fa-rotate-left mr-0.5"></i>還原
+            </button>
+          </div>
+        `;
+
+        row.querySelector('.undo-direct-settle-btn').addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          undoDirectSettlement(idx);
+        });
         
         container.appendChild(row);
       });
       
-      if (pending.length === 0 && transferred.length === 0) {
+      if (pending.length === 0 && transferred.length === 0 && direct.length === 0) {
         empty.classList.remove('hidden');
       } else {
         empty.classList.add('hidden');
@@ -2284,16 +2403,32 @@
     function updateFundTransferButtonState() {
       const act = getCurrentActivity();
       const controls = document.getElementById('fund-transfer-controls');
-      const btn = document.getElementById('transfer-selected-fund-btn');
+      const pendingUi = document.getElementById('fund-transfer-pending-ui');
+      const doneHint = document.getElementById('fund-transfer-done-hint');
+      const fundBtn = document.getElementById('transfer-selected-fund-btn');
+      const settleBtn = document.getElementById('mark-settled-btn');
       const amountEl = document.getElementById('transfer-selected-fund-amount');
-      if (!act || !controls || !btn || !amountEl) return;
+      if (!act || !controls || !fundBtn || !amountEl) return;
 
       const pending = getPendingSettlements(act);
+      const transferred = ensureFundTransfers(act);
+      const direct = ensureDirectSettlements(act);
       const selected = getSelectedPendingSettlements();
       const selectedTotal = selected.reduce((sum, s) => sum + s.amount, 0);
+      const noneSelected = selected.length === 0;
 
-      controls.classList.toggle('hidden', pending.length === 0);
-      btn.disabled = selected.length === 0;
+      const hasAny = pending.length > 0 || transferred.length > 0 || direct.length > 0;
+      controls.classList.toggle('hidden', !hasAny);
+      if (pendingUi) pendingUi.classList.toggle('hidden', pending.length === 0);
+      if (doneHint) {
+        doneHint.classList.toggle(
+          'hidden',
+          !(pending.length === 0 && (transferred.length > 0 || direct.length > 0))
+        );
+      }
+
+      fundBtn.disabled = noneSelected;
+      if (settleBtn) settleBtn.disabled = noneSelected;
       amountEl.textContent = selected.length > 0 ? formatMoney(selectedTotal) : '\u00a0';
     }
 
@@ -2379,6 +2514,7 @@
       if (!act) return;
       
       ensureFundTransfers(act);
+      ensureDirectSettlements(act);
       const balances = computeBalances(act);
       
       renderBalances(balances);
@@ -2464,6 +2600,12 @@
           to: t.to || '',
           amount: Math.round((Number(t.amount) || 0) * 100) / 100,
           transferredAt: t.transferredAt || null
+        })),
+        directSettlements: (act.directSettlements || []).map(t => ({
+          from: t.from || '',
+          to: t.to || '',
+          amount: Math.round((Number(t.amount) || 0) * 100) / 100,
+          settledAt: t.settledAt || null
         })),
         createdAt: act.createdAt || Date.now(),
         updatedAt: act.updatedAt || Date.now()
@@ -2572,6 +2714,7 @@ ${SHARE_DATA_END}`;
         participants: Array.isArray(raw.participants) ? raw.participants.map(p => String(p).trim()).filter(Boolean) : [],
         expenses: [],
         fundTransfers: [],
+        directSettlements: [],
         createdAt: raw.createdAt || Date.now(),
         updatedAt: Date.now()
       };
@@ -2601,8 +2744,18 @@ ${SHARE_DATA_END}`;
         })).filter(t => t.from && t.to && t.amount > 0);
       }
 
+      if (Array.isArray(raw.directSettlements)) {
+        act.directSettlements = raw.directSettlements.map(t => ({
+          from: String(t.from || '').trim(),
+          to: String(t.to || '').trim(),
+          amount: Math.max(0, Math.round((Number(t.amount) || 0) * 100) / 100),
+          settledAt: t.settledAt || Date.now()
+        })).filter(t => t.from && t.to && t.amount > 0);
+      }
+
       ensureActivityDates(act);
       ensureFundTransfers(act);
+      ensureDirectSettlements(act);
       return act;
     }
 
@@ -2810,6 +2963,7 @@ ${SHARE_DATA_END}`;
 
       const pending = getPendingSettlements(act);
       const transferred = ensureFundTransfers(act);
+      const direct = ensureDirectSettlements(act);
 
       if (pending.length > 0) {
         text += `\n${divider}\n`;
@@ -2821,13 +2975,21 @@ ${SHARE_DATA_END}`;
 
       if (transferred.length > 0) {
         text += `\n${divider}\n`;
-        text += '【已由基金承擔】\n';
+        text += '【已由基金找數】\n';
         transferred.forEach(t => {
           text += `${t.from} 要俾 ${t.to} ${formatMoney(t.amount)} ✅\n`;
         });
       }
 
-      if (pending.length === 0 && transferred.length === 0) {
+      if (direct.length > 0) {
+        text += `\n${divider}\n`;
+        text += '【已結清（自己轉帳）】\n';
+        direct.forEach(t => {
+          text += `${t.from} 要俾 ${t.to} ${formatMoney(t.amount)} ✅\n`;
+        });
+      }
+
+      if (pending.length === 0 && transferred.length === 0 && direct.length === 0) {
         text += `\n${divider}\n`;
         text += '✅ 已經結清！大家兩清啦 🎉\n';
       }
@@ -2861,18 +3023,6 @@ ${SHARE_DATA_END}`;
     }
 
     // ==================== 圓子基金模式 - 結算操作 ====================
-    function markAsDirectlySettled() {
-      const act = getCurrentActivity();
-      if (!act) return;
-      const settlements = getPendingSettlements(act);
-      if (settlements.length === 0) {
-        showToast('已經結清，無需額外操作');
-        return;
-      }
-      showToast('已記錄為「完全結清」— 請大家自行轉帳');
-      // 這裡可以之後加「已結清」標記，現階段只給提示
-    }
-
     function transferSelectedSettlementsToFund() {
       const act = getCurrentActivity();
       if (!act) return;
@@ -2902,12 +3052,88 @@ ${SHARE_DATA_END}`;
       saveToStorage();
       updateFundDisplays();
 
-      showToast(`已轉入圓子基金 ${formatMoney(total)}（${selected.length} 筆）`);
+      showToast(`已由基金找數 ${formatMoney(total)}（${selected.length} 筆）· 可撳「還原」撤銷`);
       renderSettlement();
+    }
 
-      setTimeout(() => {
-        showToast('已選還款已由基金承擔，其餘請大家自行轉帳');
-      }, 1800);
+    /** 標記已結清（自己轉帳）— 畫面留狀態，唔郁基金 */
+    function markSelectedSettlementsDirect() {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const selected = getSelectedPendingSettlements();
+      if (selected.length === 0) {
+        showToast('請至少揀一條還款', 'error');
+        return;
+      }
+
+      const settled = ensureDirectSettlements(act);
+      selected.forEach(s => {
+        settled.push({
+          from: s.from,
+          to: s.to,
+          amount: Math.round(s.amount * 100) / 100,
+          settledAt: Date.now()
+        });
+      });
+
+      act.updatedAt = Date.now();
+      saveToStorage();
+      showToast(`已標記 ${selected.length} 筆為已結清 · 可撳「還原」撤銷`);
+      renderSettlement();
+    }
+
+    /** 還原一筆「已由基金找數」— 從 fundTransfers 移除，基金扣返金額 */
+    function undoFundTransfer(index) {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const transfers = ensureFundTransfers(act);
+      if (index < 0 || index >= transfers.length) {
+        showToast('搵唔到呢筆記錄', 'error');
+        return;
+      }
+
+      const t = transfers[index];
+      const amount = Math.round((Number(t.amount) || 0) * 100) / 100;
+      const bal = fundBalance;
+
+      let msg = `還原「${t.from} 要俾 ${t.to} ${formatMoney(amount)}」？\n基金會扣返 ${formatMoney(amount)}，呢筆會變返待還款。`;
+      if (bal + 0.005 < amount) {
+        msg += `\n\n注意：基金而家淨係 ${formatMoney(bal)}，少過呢筆金額，還原後基金會變 $0。`;
+      }
+      if (!confirm(msg)) return;
+
+      transfers.splice(index, 1);
+      fundBalance = Math.max(0, Math.round((bal - amount) * 100) / 100);
+      act.updatedAt = Date.now();
+      saveFundBalance();
+      saveToStorage();
+      updateFundDisplays();
+      renderSettlement();
+      showToast(`已還原 · 基金扣返 ${formatMoney(Math.min(amount, bal))}`);
+    }
+
+    /** 還原一筆「已結清（自己轉帳）」標記 */
+    function undoDirectSettlement(index) {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const settled = ensureDirectSettlements(act);
+      if (index < 0 || index >= settled.length) {
+        showToast('搵唔到呢筆記錄', 'error');
+        return;
+      }
+
+      const t = settled[index];
+      const amount = Math.round((Number(t.amount) || 0) * 100) / 100;
+      if (!confirm(`還原「${t.from} 要俾 ${t.to} ${formatMoney(amount)}」嘅已結清標記？\n呢筆會變返待還款。`)) return;
+
+      settled.splice(index, 1);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      renderSettlement();
+      showToast('已還原 · 變返待還款');
     }
 
     // ==================== Demo Data ====================
@@ -2955,6 +3181,9 @@ ${SHARE_DATA_END}`;
           createdAt: Date.now() - 30000
         }
       ];
+
+      act.fundTransfers = [];
+      act.directSettlements = [];
       
       act.updatedAt = Date.now();
       saveToStorage();
@@ -2964,6 +3193,35 @@ ${SHARE_DATA_END}`;
       showToast('範例數據已載入');
     }
 
+    // ==================== Text size ====================
+    function getTextSize() {
+      try {
+        const s = localStorage.getItem(TEXT_SIZE_KEY);
+        if (s === 'md' || s === 'lg' || s === 'xl') return s;
+      } catch (e) { /* ignore */ }
+      return 'md';
+    }
+
+    function applyTextSize(size, { silent } = {}) {
+      const level = TEXT_SIZE_LEVELS.find(l => l.id === size) || TEXT_SIZE_LEVELS[0];
+      document.documentElement.setAttribute('data-text-size', level.id);
+      try {
+        localStorage.setItem(TEXT_SIZE_KEY, level.id);
+      } catch (e) { /* ignore */ }
+      const label = document.getElementById('text-size-label');
+      if (label) label.textContent = level.label;
+      const btn = document.getElementById('text-size-btn');
+      if (btn) btn.title = `文字大小：${level.label}（點擊切換）`;
+      if (!silent) showToast(`文字大小：${level.label}`);
+    }
+
+    function cycleTextSize() {
+      const cur = getTextSize();
+      const idx = TEXT_SIZE_LEVELS.findIndex(l => l.id === cur);
+      const next = TEXT_SIZE_LEVELS[(idx + 1) % TEXT_SIZE_LEVELS.length];
+      applyTextSize(next.id);
+    }
+
     // ==================== Init ====================
     function initTailwind() {
       // Any runtime tailwind config if needed
@@ -2971,6 +3229,7 @@ ${SHARE_DATA_END}`;
 
     function init() {
       initTailwind();
+      applyTextSize(getTextSize(), { silent: true });
       loadFromStorage();
       loadFundBalance();
       updateFundDisplays();
@@ -3052,6 +3311,7 @@ ${SHARE_DATA_END}`;
       const settlements = computeSettlements(balances);
       const pending = getPendingSettlements(act);
       const transferred = ensureFundTransfers(act);
+      const direct = ensureDirectSettlements(act);
       const personSummaries = computePersonSummaries(act);
 
       return {
@@ -3074,6 +3334,12 @@ ${SHARE_DATA_END}`;
           to: t.to,
           amount: Number(t.amount) || 0,
           transferredAt: t.transferredAt || null
+        })),
+        directSettlements: direct.map(t => ({
+          from: t.from,
+          to: t.to,
+          amount: Number(t.amount) || 0,
+          settledAt: t.settledAt || null
         })),
         balanceSum: Math.round(Object.values(balances).reduce((s, v) => s + v, 0) * 100) / 100
       };
@@ -3170,13 +3436,24 @@ ${SHARE_DATA_END}`;
         }
 
         if (focus.fundTransfers.length > 0) {
-          text += `\n【已由基金承擔】\n`;
+          text += `\n【已由基金找數】\n`;
           focus.fundTransfers.forEach(t => {
             text += `  ${t.from} → ${t.to}：${formatMoney(t.amount)}\n`;
           });
         }
 
-        if (focus.pendingSettlements.length === 0 && focus.fundTransfers.length === 0) {
+        if ((focus.directSettlements || []).length > 0) {
+          text += `\n【已結清（自己轉帳）】\n`;
+          focus.directSettlements.forEach(t => {
+            text += `  ${t.from} → ${t.to}：${formatMoney(t.amount)}\n`;
+          });
+        }
+
+        if (
+          focus.pendingSettlements.length === 0 &&
+          focus.fundTransfers.length === 0 &&
+          (focus.directSettlements || []).length === 0
+        ) {
           text += `\n✅ 此活動已結清\n`;
         }
       }
@@ -3229,7 +3506,11 @@ ${SHARE_DATA_END}`;
 1. 建立活動（例如「唱K + 食飯」），可選填日期或日期範圍
 2. 加入所有朋友名字
 3. 新增每筆開支：誰俾錢、幾多錢、項目、分俾邊啲人
-4. 系統會自動計算每個人結餘同最少還款方案
+4. 有需要可用「圓子基金」墊支／找數（全局錢包）
+5. 系統會自動計算每個人結餘同最少還款方案
+
+建議還款：剔選後可「標記已結清」或「由基金找數」；撳錯可「還原」。
+文字太細？撳右上角文字掣，可喺 標準 / 大 / 特大 之間切換。
 
 想交俾朋友接手？撳「複製俾朋友」→ WhatsApp 貼上 send。朋友撳「接手記帳」貼返入去就得。
 
