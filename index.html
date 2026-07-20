@@ -1,4 +1,11 @@
 <!DOCTYPE html>
+<!--
+  圓子基金 (Circle Fund) — Copyright (c) 2026 Nik (github.com/nik-neural)
+  Official app: https://nik-neural.github.io/circle-fund/
+  Official source: https://github.com/nik-neural/circle-fund
+  License: see LICENSE (personal non-commercial use; no commercial clone / store listing without permission)
+  Built with assistance of Grok Build / Grok (xAI). NOT an official xAI product.
+-->
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
@@ -7,7 +14,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="圓子基金">
-  <meta name="description" content="朋友之間的群組消費記帳，支援圓子基金分帳">
+  <meta name="application-name" content="圓子基金">
+  <meta name="author" content="nik-neural">
+  <meta name="description" content="朋友之間的群組消費記帳，支援圓子基金分帳。官方版：nik-neural.github.io/circle-fund">
+  <meta name="copyright" content="Copyright 2026 Nik (nik-neural). Not an official xAI product.">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -351,6 +361,24 @@
           <i class="fa-solid fa-plus"></i> 建立第一個活動
         </button>
       </div>
+
+      <!-- 版權／官方來源（低調，方便認正版） -->
+      <footer class="mt-10 pt-4 border-t border-slate-200 text-center space-y-1">
+        <p class="text-[10px] text-slate-400 leading-relaxed">
+          © 2026 <span class="font-medium text-slate-500">nik-neural</span> · 圓子基金 · 個人非商業使用
+        </p>
+        <p class="text-[10px] text-slate-400 leading-relaxed">
+          官方：
+          <a href="https://nik-neural.github.io/circle-fund/" class="text-emerald-600/90 hover:text-emerald-700 underline-offset-2 hover:underline">Web App</a>
+          ·
+          <a href="https://github.com/nik-neural/circle-fund" class="text-emerald-600/90 hover:text-emerald-700 underline-offset-2 hover:underline">GitHub</a>
+          ·
+          <button type="button" onclick="showHelp()" class="text-emerald-600/90 hover:text-emerald-700 underline-offset-2 hover:underline">說明／免責</button>
+        </p>
+        <p class="text-[9px] text-slate-400/90 leading-relaxed px-2">
+          借助 Grok Build 開發 · 非 xAI 官方產品 · 計算僅供參考
+        </p>
+      </footer>
     </div>
 
     <!-- Activity Detail View -->
@@ -674,8 +702,9 @@
           <div id="person-breakdown-empty" class="hidden text-sm text-slate-400 py-2">暫未有數據</div>
         </div>
         
-        <div class="text-[10px] text-center text-slate-400 mt-3">
-          資料只儲存喺你嘅瀏覽器（localStorage）。關閉頁面後仍然存在。
+        <div class="text-[10px] text-center text-slate-400 mt-3 space-y-1">
+          <p>資料只儲存喺你嘅瀏覽器（localStorage）。關閉頁面後仍然存在。</p>
+          <p class="text-[9px] text-slate-400/90">計算僅供參考 · 轉帳前請自行核對 · © 2026 nik-neural</p>
           <button type="button" onclick="showBugReportModal()" class="block mx-auto mt-1 text-amber-600 hover:text-amber-700 font-medium">
             <i class="fa-solid fa-bug mr-0.5"></i>覺得計錯數？報告問題
           </button>
@@ -1048,7 +1077,9 @@
     const FUND_KEY = 'yuenzifund_fund_balance';
     const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'yuenzifund_text_size';
-    const APP_VERSION = '1.6.1';
+    const APP_VERSION = '1.6.2';
+    const APP_COPYRIGHT = '© 2026 nik-neural';
+    const OFFICIAL_SOURCE_URL = 'https://github.com/nik-neural/circle-fund';
     const ACTIVITY_EXPORT_FORMAT = 'yuenzifund-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
     let pendingImportActivity = null;
@@ -3030,8 +3061,8 @@ ${SHARE_DATA_END}`;
       }
 
       text += `\n${divider}\n`;
-      text += `🔗 想交俾下一位接手？撳「俾朋友接手」→ WhatsApp 貼上 send 就得。接手人撳「接手記帳」貼返入去。\n`;
-      text += `📲 未用過圓子基金？開呢個連結：\n${SHARE_APP_URL}`;
+      text += `📲 官方圓子基金（免費 Web App）：\n${SHARE_APP_URL}\n`;
+      text += `⚠️ 其他網站／App 商店版本可能非官方，請認準呢個連結。`;
 
       return text;
     }
@@ -3536,7 +3567,7 @@ ${SHARE_DATA_END}`;
     }
 
     function showHelp() {
-      const msg = `圓子基金 使用小貼士：
+      const msg = `圓子基金 使用小貼士（v${APP_VERSION}）
 
 1. 建立活動（例如「唱K + 食飯」），可選填日期或日期範圍
 2. 加入所有朋友名字
@@ -3551,7 +3582,15 @@ ${SHARE_DATA_END}`;
 
 覺得計錯數？撳右上角 🐛 圖示報告問題，複製報告 send 畀開發者 (Nik)。
 
-所有資料只存在你手機/電腦入面，安全可靠。`;
+所有資料只存在你手機/電腦入面，唔会上傳伺服器。
+
+—— 版權 · 免責 ——
+${APP_COPYRIGHT} · 個人非商業使用
+官方 App：${SHARE_APP_URL}
+原始碼：${OFFICIAL_SOURCE_URL}
+計算結果僅供參考，轉帳前請自行核對；軟件按現況提供，不作保證。
+借助 Grok Build / Grok（xAI）開發，屬個人獨立作品，並非 xAI 官方產品。
+未授權唔可以商業轉售、上架商店當自己產品，或改頭換面 clone 賺錢。詳見 GitHub LICENSE。`;
       alert(msg);
     }
 
