@@ -823,7 +823,7 @@
         <div class="flex items-center gap-x-1.5 sm:gap-x-2 text-sm">
           <!-- 全局基金：header 淨 icon（金額喺活動列表大卡 / modal，手機唔逼） -->
           <button type="button" id="fund-header-btn" onclick="showFundManagerModal()" 
-                  class="w-9 h-9 flex items-center justify-center text-emerald-700 fund-glass pressable"
+                  class="w-9 h-9 flex items-center justify-center text-emerald-700 fund-glass pressable rounded-full"
                   title="管理全局圓子基金"
                   aria-label="管理全局圓子基金">
             <i class="fa-solid fa-piggy-bank text-base"></i>
@@ -1014,7 +1014,7 @@
               class="w-full hk-card fund-glass mb-5 p-3.5 text-left pressable active:scale-[0.985] transition-all">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-9 h-9 shrink-0 rounded-2xl bg-white/45 border border-white/50 flex items-center justify-center text-emerald-700">
+            <div class="w-9 h-9 shrink-0 rounded-full bg-white/45 border border-white/50 flex items-center justify-center text-emerald-700">
               <i class="fa-solid fa-piggy-bank"></i>
             </div>
             <div class="min-w-0">
@@ -1650,7 +1650,7 @@
     const FUND_KEY = 'yuenzifund_fund_balance';
     const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'yuenzifund_text_size';
-    const APP_VERSION = '1.7.2';
+    const APP_VERSION = '1.7.3';
     const APP_COPYRIGHT = '© 2026 nik-neural';
     const OFFICIAL_SOURCE_URL = 'https://github.com/nik-neural/circle-fund';
     const ACTIVITY_EXPORT_FORMAT = 'yuenzifund-activity';
