@@ -32,6 +32,8 @@
 ## 技術
 
 - 單一 HTML · Tailwind CDN · 零後端
+- UI：iOS 風格 **Liquid Glass**（emerald 主色；半透明導航、玻璃卡片、膠囊按鈕）
+- 全局「圓子基金」共同錢包（跨活動共享）
 - [GitHub Pages](https://pages.github.com/) 部署
 - PWA（`manifest.json` + `icons/`）
 - 資料儲存喺瀏覽器 localStorage，唔会上傳伺服器

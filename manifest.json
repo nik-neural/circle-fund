@@ -7,10 +7,13 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#ecfdf5",
-  "theme_color": "#10b981",
+  "background_color": "#e6f7f1",
+  "theme_color": "#e6f7f1",
   "lang": "zh-HK",
-  "categories": ["finance", "utilities"],
+  "categories": [
+    "finance",
+    "utilities"
+  ],
   "related_applications": [],
   "prefer_related_applications": false,
   "icons": [
