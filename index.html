@@ -1199,7 +1199,8 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <!-- Personal Balances -->
           <div class="hk-card p-5">
-            <div class="text-sm font-semibold text-slate-700 mb-3">每人結餘</div>
+            <div class="text-sm font-semibold text-slate-700 mb-1">每人結餘（尚收／尚欠）</div>
+            <p class="text-[10px] text-slate-400 mb-3">已扣「已結清／基金找數」後，而家仲要收／俾嘅金額。正＝尚收，負＝尚欠。帳面（只計開支）會喺有已還時另行列出。</p>
             <div id="balances-list" class="space-y-2">
             </div>
             <div id="balances-empty" class="hidden text-sm text-slate-400 py-2">暫未有數據</div>
@@ -1214,7 +1215,8 @@
           
           <!-- Suggested Settlements + 圓子基金操作（保留全局基金找數） -->
           <div class="hk-card p-5">
-            <div class="text-sm font-semibold text-slate-700 mb-3">建議還款方案（最少轉帳）</div>
+            <div class="text-sm font-semibold text-slate-700 mb-1">建議還款方案（最少轉帳）</div>
+            <p id="settlements-handled-hint" class="hidden text-[10px] text-emerald-700 mb-2 leading-relaxed"></p>
             <div id="settlements-list" class="space-y-2">
             </div>
             <div id="settlements-empty" class="hidden">
@@ -1266,9 +1268,9 @@
         <div class="hk-card p-5 mt-4">
           <div class="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
             <i class="fa-solid fa-table-list text-emerald-600"></i>
-            <span>每人明細（已付 / 應付 / 結餘）</span>
+            <span>每人明細（已付 / 應付 / 帳面 / 尚欠）</span>
           </div>
-          <p class="text-[10px] text-slate-400 mb-3">結餘 = 已付 − 應付。正數代表應收，負數代表應俾其他人。</p>
+          <p class="text-[10px] text-slate-400 mb-3">帳面結餘 = 已付 − 應付（只計開支）。尚收／尚欠 = 帳面扣咗已結清／基金找數後仲要轉嘅數。圓子基金仍然係一條全局大數。</p>
           <div id="person-breakdown-list" class="space-y-2">
             <!-- Populated by JS -->
           </div>
@@ -1635,6 +1637,72 @@
     </div>
   </div>
 
+  <!-- 找部分金額 Modal（初始唔帶 flex，避免同 hidden 並存搞亂開關判斷） -->
+  <div id="partial-settle-modal" onclick="if (event.target.id === 'partial-settle-modal') hidePartialSettleModal()"
+       class="modal-overlay hidden fixed inset-0 items-end sm:items-center justify-center p-0 sm:p-4">
+    <div onclick="event.stopImmediatePropagation()"
+         class="glass-sheet w-full sm:w-[440px] max-h-[90vh] flex flex-col rounded-t-[28px] sm:rounded-[28px]">
+
+      <div class="shrink-0 p-6 sm:p-7 pb-4 border-b border-white/40">
+        <div class="flex justify-between items-start gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-hand-holding-dollar text-emerald-500 text-xl"></i>
+              <div class="font-bold text-xl">找部分金額</div>
+            </div>
+            <div id="partial-settle-subtitle" class="text-xs text-slate-500 mt-1 leading-relaxed"></div>
+          </div>
+          <button type="button" onclick="hidePartialSettleModal()"
+                  class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 glass-control pressable shrink-0"
+                  aria-label="關閉">
+            <i class="fa-solid fa-times text-xl"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 min-h-0 overflow-y-auto px-6 sm:px-7 py-4 space-y-4">
+        <div>
+          <div class="text-sm font-semibold text-slate-600 mb-2">找畀邊個？</div>
+          <div id="partial-settle-creditor-list" class="space-y-2">
+          </div>
+        </div>
+
+        <div>
+          <label for="partial-settle-amount" class="block text-sm font-semibold text-slate-600 mb-1.5">今次金額</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
+            <input id="partial-settle-amount" type="number" inputmode="decimal" min="0" step="0.01"
+                   placeholder="0.00"
+                   class="field-liquid w-full h-12 pl-8 pr-3 text-base font-semibold tabular-nums outline-none"
+                   oninput="updatePartialSettleMaxHint()">
+          </div>
+          <div id="partial-settle-max-hint" class="text-[10px] text-slate-400 mt-1.5 tabular-nums"></div>
+          <div class="flex flex-wrap gap-1.5 mt-2">
+            <button type="button" onclick="setPartialSettleAmountPreset('max')"
+                    class="text-[10px] px-2.5 h-7 glass-pill text-emerald-700 font-medium pressable">全數</button>
+            <button type="button" onclick="setPartialSettleAmountPreset(0.5)"
+                    class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">一半</button>
+            <button type="button" onclick="setPartialSettleAmountPreset(500)"
+                    class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">$500</button>
+            <button type="button" onclick="setPartialSettleAmountPreset(1000)"
+                    class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">$1000</button>
+            <button type="button" onclick="setPartialSettleAmountPreset(1500)"
+                    class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">$1500</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="shrink-0 p-6 sm:p-7 pt-4 border-t border-white/40 flex gap-3">
+        <button type="button" onclick="hidePartialSettleModal()"
+                class="flex-1 h-12 btn-liquid-ghost text-sm">取消</button>
+        <button type="button" id="partial-settle-confirm-btn" onclick="confirmPartialSettle()"
+                class="flex-1 h-12 btn-liquid-settle text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+          確認已轉
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 items-center"></div>
 
@@ -1643,6 +1711,7 @@
     let activities = [];
     let currentActivityId = null;
     let editingExpenseId = null;
+    let partialSettleState = null;
 
     // 圓子基金（全局）
     let fundBalance = 0;
@@ -1650,7 +1719,7 @@
     const FUND_KEY = 'yuenzifund_fund_balance';
     const LOCAL_NOTICE_KEY = 'yuenzifund_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'yuenzifund_text_size';
-    const APP_VERSION = '1.7.5';
+    const APP_VERSION = '1.8.0';
     const APP_COPYRIGHT = '© 2026 nik-neural';
     const OFFICIAL_SOURCE_URL = 'https://github.com/nik-neural/circle-fund';
     const ACTIVITY_EXPORT_FORMAT = 'yuenzifund-activity';
@@ -2656,9 +2725,18 @@
           }
         }
 
+        const splitScope = getExpenseSplitScope(act, people);
         const splitLabel = amountToSplit <= 0.005
           ? '基金全額支付，無需分帳'
-          : `分 ${people.length} 人 • ${formatSharesDisplay(shares, people)}`;
+          : `${splitScope.shortLabel} • ${formatSharesDisplay(shares, people)}`;
+
+        const partialSplitHint = amountToSplit > 0.005 && !splitScope.isEveryone
+          ? `<div class="mt-1.5 text-[10px] text-sky-900/90 bg-sky-50/80 border border-sky-200/50 px-2.5 py-1.5 rounded-xl leading-relaxed">
+                <i class="fa-solid fa-user-group mr-1 text-sky-500"></i>
+                <span class="font-medium">只分 ${people.length} 人</span>${splitScope.excluded.length ? ` · 唔包 ${splitScope.excluded.map(escapeHtml).join('、')}` : ''}
+                <span class="text-sky-700/80">（唔係全員，應付會同其他人唔同）</span>
+              </div>`
+          : '';
 
         const card = document.createElement('div');
         card.className = 'expense-card p-3.5 flex gap-3 items-start';
@@ -2681,6 +2759,11 @@
                 <i class="fa-solid fa-piggy-bank mr-1"></i>
                 <span>基金 ${formatMoney(fundPaid)}</span>
               </div>` : ''}
+              ${amountToSplit > 0.005 && !splitScope.isEveryone ? `
+              <div class="inline-flex items-center px-2 py-0.5 glass-pill text-sky-800 text-[10px] font-medium">
+                <i class="fa-solid fa-scissors mr-1"></i>
+                <span>只分 ${people.length} 人</span>
+              </div>` : ''}
             </div>
             
             <div class="mt-1.5 text-xs text-slate-500 leading-relaxed">
@@ -2688,6 +2771,7 @@
               <span class="font-medium">${splitLabel}</span>
               <span class="text-slate-400 block sm:inline sm:ml-1">• ${people.map(escapeHtml).join('、')}</span>
             </div>
+            ${partialSplitHint}
             ${payerLine}
           </div>
           
@@ -2795,6 +2879,42 @@
       return people.map(p => `${p} ${formatMoney(shares[p])}`).join('、');
     }
 
+    /** 分帳係咪全員；唔係就列出未包嘅人 */
+    function getExpenseSplitScope(act, people) {
+      const all = [...(act?.participants || [])];
+      const split = people || [];
+      const isEveryone = all.length > 0
+        && split.length === all.length
+        && all.every(p => split.includes(p));
+      const excluded = isEveryone ? [] : all.filter(p => !split.includes(p));
+      return {
+        isEveryone,
+        excluded,
+        shortLabel: isEveryone
+          ? `全員分 ${split.length} 人`
+          : `只分 ${split.length} 人`
+      };
+    }
+
+    function getHandledSettlements(act) {
+      return [
+        ...ensureFundTransfers(act),
+        ...ensureDirectSettlements(act)
+      ];
+    }
+
+    function getHandledSettlementTotal(act) {
+      return Math.round(
+        getHandledSettlements(act).reduce((s, t) => s + (Number(t.amount) || 0), 0) * 100
+      ) / 100;
+    }
+
+    function formatSignedBalance(val) {
+      const abs = Math.abs(val);
+      if (abs < 0.01) return formatMoney(0);
+      return `${val >= 0.005 ? '+' : '−'}${formatMoney(abs)}`;
+    }
+
     function computeBalances(act) {
       const balances = {};
       const allPeople = new Set(act.participants);
@@ -2825,6 +2945,18 @@
       return balances;
     }
 
+    /** 有效結餘 = 開支結餘 ± 已由基金找數 ± 已標記結清（唔郁全局基金大數） */
+    function computeEffectiveBalances(act) {
+      const balances = { ...computeBalances(act) };
+      getHandledSettlements(act).forEach(t => {
+        const amt = Math.round((Number(t.amount) || 0) * 100) / 100;
+        if (amt <= 0.005) return;
+        balances[t.from] = Math.round(((balances[t.from] || 0) + amt) * 100) / 100;
+        balances[t.to]   = Math.round(((balances[t.to]   || 0) - amt) * 100) / 100;
+      });
+      return balances;
+    }
+
     function computePersonSummaries(act) {
       const people = new Set(act.participants);
       act.expenses.forEach(e => {
@@ -2847,14 +2979,33 @@
         });
       });
 
-      const balances = computeBalances(act);
+      const bookBalances = computeBalances(act);
+      const remainingBalances = computeEffectiveBalances(act);
+      const handled = getHandledSettlements(act);
+      const settledOut = {};
+      const settledIn = {};
+      people.forEach(p => { settledOut[p] = 0; settledIn[p] = 0; });
+      handled.forEach(t => {
+        const amt = Math.round((Number(t.amount) || 0) * 100) / 100;
+        if (amt <= 0.005) return;
+        settledOut[t.from] = Math.round(((settledOut[t.from] || 0) + amt) * 100) / 100;
+        settledIn[t.to] = Math.round(((settledIn[t.to] || 0) + amt) * 100) / 100;
+      });
 
-      return [...people].map(name => ({
-        name,
-        paid: Math.round((paid[name] || 0) * 100) / 100,
-        owed: Math.round((owed[name] || 0) * 100) / 100,
-        balance: balances[name] || 0
-      })).sort((a, b) => b.balance - a.balance);
+      return [...people].map(name => {
+        const bookBalance = bookBalances[name] || 0;
+        const remainingBalance = remainingBalances[name] || 0;
+        return {
+          name,
+          paid: Math.round((paid[name] || 0) * 100) / 100,
+          owed: Math.round((owed[name] || 0) * 100) / 100,
+          balance: bookBalance,
+          bookBalance,
+          remainingBalance,
+          settledOut: settledOut[name] || 0,
+          settledIn: settledIn[name] || 0
+        };
+      }).sort((a, b) => b.remainingBalance - a.remainingBalance);
     }
 
     function ensureFundTransfers(act) {
@@ -2890,8 +3041,7 @@
     }
 
     function getPendingSettlements(act) {
-      const settlements = computeSettlements(computeBalances(act));
-      return settlements.filter(s => !isSettlementHandled(act, s));
+      return computeSettlements(computeEffectiveBalances(act));
     }
 
     function computeSettlements(balances) {
@@ -2932,9 +3082,12 @@
       return settlements;
     }
 
-    function renderBalances(balances) {
+    function renderBalances(act) {
       const container = document.getElementById('balances-list');
       const empty = document.getElementById('balances-empty');
+      const balances = computeEffectiveBalances(act);
+      const bookBalances = computeBalances(act);
+      const hasHandled = getHandledSettlements(act).length > 0;
       
       container.innerHTML = '';
       
@@ -2945,17 +3098,20 @@
       }
       empty.classList.add('hidden');
       
-      // Sort: positive first (to receive), then negative
       entries.sort((a, b) => b[1] - a[1]);
       
       entries.forEach(([name, val]) => {
         const abs = Math.abs(val);
+        const book = bookBalances[name] || 0;
+        const bookDiffers = hasHandled && Math.abs(book - val) >= 0.01;
         if (abs < 0.01) {
-          // Show as settled
           const row = document.createElement('div');
           row.className = `flex items-center justify-between px-3 py-2 rounded-2xl bg-white/35 border border-white/45`;
           row.innerHTML = `
-            <div class="font-medium">${escapeHtml(name)}</div>
+            <div class="min-w-0">
+              <div class="font-medium">${escapeHtml(name)}</div>
+              ${bookDiffers ? `<div class="text-[10px] text-slate-400 tabular-nums">帳面 ${formatSignedBalance(book)}</div>` : ''}
+            </div>
             <div class="text-right">
               <div class="font-semibold tabular-nums text-slate-500">${formatMoney(0)}</div>
               <div class="text-[10px] -mt-0.5 text-slate-400">已兩清</div>
@@ -2969,13 +3125,16 @@
         row.className = `flex items-center justify-between px-3 py-2 rounded-2xl ${isPositive ? 'balance-positive' : 'balance-negative'}`;
         
         row.innerHTML = `
-          <div class="font-medium">${escapeHtml(name)}</div>
+          <div class="min-w-0">
+            <div class="font-medium">${escapeHtml(name)}</div>
+            ${bookDiffers ? `<div class="text-[10px] text-slate-400 tabular-nums">帳面 ${formatSignedBalance(book)}</div>` : ''}
+          </div>
           <div class="text-right">
             <div class="font-semibold tabular-nums ${isPositive ? 'text-emerald-700' : 'text-red-600'}">
-              ${isPositive ? '+' : ''}${formatMoney(abs)}
+              ${isPositive ? '+' : '−'}${formatMoney(abs)}
             </div>
             <div class="text-[10px] -mt-0.5 ${isPositive ? 'text-emerald-600' : 'text-red-500'}">
-              ${isPositive ? '應收' : '應俾'}
+              ${isPositive ? '尚收' : '尚欠'}
             </div>
           </div>
         `;
@@ -2987,9 +3146,22 @@
     function renderSettlements(act) {
       const container = document.getElementById('settlements-list');
       const empty = document.getElementById('settlements-empty');
+      const handledHint = document.getElementById('settlements-handled-hint');
       const pending = getPendingSettlements(act);
       const transferred = ensureFundTransfers(act);
       const direct = ensureDirectSettlements(act);
+      const handledCount = transferred.length + direct.length;
+      const handledTotal = getHandledSettlementTotal(act);
+
+      if (handledHint) {
+        if (handledCount > 0) {
+          handledHint.textContent = `已記 ${handledCount} 筆共 ${formatMoney(handledTotal)}（已結清／基金找數）${pending.length > 0 ? '，以下係仲要轉' : '，暫無待還款'}`;
+          handledHint.classList.remove('hidden');
+        } else {
+          handledHint.textContent = '';
+          handledHint.classList.add('hidden');
+        }
+      }
       
       container.innerHTML = '';
       
@@ -3012,8 +3184,14 @@
           <div class="flex items-center gap-2 shrink-0">
             <div class="font-bold tabular-nums text-lg text-slate-800">${formatMoney(s.amount)}</div>
             <button type="button"
-                    class="copy-settlement-btn w-7 h-7 flex items-center justify-center text-slate-400 hover:text-emerald-700 glass-control pressable">
+                    class="copy-settlement-btn w-7 h-7 flex items-center justify-center text-slate-400 hover:text-emerald-700 glass-control pressable"
+                    title="複製這筆還款">
               <i class="fa-solid fa-copy text-xs"></i>
+            </button>
+            <button type="button"
+                    class="partial-settle-btn w-7 h-7 flex items-center justify-center text-emerald-600 hover:text-emerald-700 glass-control pressable"
+                    title="找部分金額">
+              <i class="fa-solid fa-hand-holding-dollar text-xs"></i>
             </button>
           </div>
         `;
@@ -3022,6 +3200,13 @@
           e.preventDefault();
           e.stopPropagation();
           copySettlementLine(s.from, s.to, s.amount);
+        });
+
+        row.querySelector('.partial-settle-btn').addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          partialSettle(s.from, s.to);
         });
         
         container.appendChild(row);
@@ -3172,10 +3357,11 @@
       }
       empty.classList.add('hidden');
 
-      summaries.forEach(({ name, paid, owed, balance }) => {
-        const abs = Math.abs(balance);
-        const isSettled = abs < 0.01;
-        const isPositive = balance >= 0.005;
+      summaries.forEach(({ name, paid, owed, bookBalance, remainingBalance, settledOut, settledIn }) => {
+        const remAbs = Math.abs(remainingBalance);
+        const isSettled = remAbs < 0.01;
+        const isPositive = remainingBalance >= 0.005;
+        const hasHandled = (settledOut > 0.005) || (settledIn > 0.005);
 
         const row = document.createElement('div');
         row.className = `px-3 py-3 rounded-2xl border ${isSettled ? 'bg-white/30 border-white/45' : isPositive ? 'balance-positive' : 'balance-negative'}`;
@@ -3185,10 +3371,10 @@
             <div class="font-semibold text-slate-800">${escapeHtml(name)}</div>
             <div class="text-right shrink-0">
               <div class="font-bold tabular-nums ${isSettled ? 'text-slate-500' : isPositive ? 'text-emerald-700' : 'text-red-600'}">
-                ${isSettled ? formatMoney(0) : `${isPositive ? '+' : '−'}${formatMoney(abs)}`}
+                ${isSettled ? formatMoney(0) : `${isPositive ? '+' : '−'}${formatMoney(remAbs)}`}
               </div>
               <div class="text-[10px] ${isSettled ? 'text-slate-400' : isPositive ? 'text-emerald-600' : 'text-red-500'}">
-                ${isSettled ? '已兩清' : isPositive ? '應收' : '應俾'}
+                ${isSettled ? '已兩清' : isPositive ? '尚收' : '尚欠'}
               </div>
             </div>
           </div>
@@ -3201,8 +3387,19 @@
               <div class="text-slate-400">應付份額</div>
               <div class="font-semibold tabular-nums text-slate-700 mt-0.5">${formatMoney(owed)}</div>
             </div>
+            <div class="px-2.5 py-1.5 rounded-xl bg-white/80 border border-slate-100">
+              <div class="text-slate-400">帳面結餘</div>
+              <div class="font-semibold tabular-nums text-slate-700 mt-0.5">${formatSignedBalance(bookBalance)}</div>
+            </div>
+            <div class="px-2.5 py-1.5 rounded-xl bg-white/80 border border-slate-100">
+              <div class="text-slate-400">尚收／尚欠</div>
+              <div class="font-semibold tabular-nums ${isSettled ? 'text-slate-500' : isPositive ? 'text-emerald-700' : 'text-red-600'} mt-0.5">${formatSignedBalance(remainingBalance)}</div>
+            </div>
           </div>
-          ${!isSettled ? `<div class="text-[10px] text-slate-400 mt-1.5 tabular-nums">${formatMoney(paid)} − ${formatMoney(owed)} = ${isPositive ? '+' : '−'}${formatMoney(abs)}</div>` : ''}
+          <div class="text-[10px] text-slate-400 mt-1.5 tabular-nums leading-relaxed">
+            ${formatMoney(paid)} − ${formatMoney(owed)} = 帳面 ${formatSignedBalance(bookBalance)}
+            ${hasHandled ? `<br>已還 ${formatMoney(settledOut)} · 已收 ${formatMoney(settledIn)} → 尚${isSettled ? '兩清' : (isPositive ? '收' : '欠')} ${isSettled ? formatMoney(0) : formatMoney(remAbs)}` : ''}
+          </div>
         `;
 
         container.appendChild(row);
@@ -3215,9 +3412,8 @@
       
       ensureFundTransfers(act);
       ensureDirectSettlements(act);
-      const balances = computeBalances(act);
       
-      renderBalances(balances);
+      renderBalances(act);
       renderSettlements(act);
       renderPersonBreakdown(act);
     }
@@ -3624,7 +3820,7 @@ ${SHARE_DATA_END}`;
       const act = getCurrentActivity();
       if (!act) return '';
 
-      const balances = computeBalances(act);
+      const remainingBalances = computeEffectiveBalances(act);
       const total = act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
       const divider = '────────────────';
 
@@ -3638,25 +3834,55 @@ ${SHARE_DATA_END}`;
       text += `${divider}\n`;
       text += `💰 總開支：${formatMoney(total)}\n`;
       text += `🐷 圓子基金餘額：${formatMoney(fundBalance)}\n`;
+
       text += `${divider}\n`;
-      text += '【每人明細】\n';
-      computePersonSummaries(act).forEach(({ name, paid, owed, balance }) => {
-        const abs = Math.abs(balance);
-        if (abs < 0.01) {
-          text += `${name}：已付 ${formatMoney(paid)}，應付 ${formatMoney(owed)}，已兩清 ✅\n`;
+      if (act.expenses.length === 0) {
+        text += '【開支記錄】仲未有開支\n';
+      } else {
+        text += `【開支記錄】共 ${act.expenses.length} 筆\n`;
+        act.expenses.forEach((exp, i) => {
+          const { fundPaid, amountToSplit, people } = getExpenseSplitDetails(exp);
+          const parts = [];
+          if (exp.payer) parts.push(`${exp.payer} 俾`);
+          if (fundPaid > 0.005) parts.push(`基金墊 ${formatMoney(fundPaid)}`);
+          if (amountToSplit <= 0.005) {
+            parts.push('基金全額');
+          } else if (people.length > 0) {
+            const scope = getExpenseSplitScope(act, people);
+            if (scope.isEveryone) {
+              parts.push(`全員分 ${people.length} 人`);
+            } else {
+              parts.push(`只分：${people.join('、')}`);
+              if (scope.excluded.length) parts.push(`唔包 ${scope.excluded.join('、')}`);
+            }
+          }
+          const meta = parts.length ? `（${parts.join(' · ')}）` : '';
+          text += `${i + 1}. ${exp.description || '開支'} — ${formatMoney(exp.amount)}${meta}\n`;
+        });
+      }
+
+      text += `${divider}\n`;
+      text += '【每人明細】帳面=已付−應付；尚收/尚欠=扣已還後\n';
+      computePersonSummaries(act).forEach(({ name, paid, owed, bookBalance, remainingBalance, settledOut, settledIn }) => {
+        const remAbs = Math.abs(remainingBalance);
+        let line = `${name}：已付 ${formatMoney(paid)}，應付 ${formatMoney(owed)}，帳面 ${formatSignedBalance(bookBalance)}`;
+        if ((settledOut > 0.005) || (settledIn > 0.005) || Math.abs(bookBalance - remainingBalance) >= 0.01) {
+          line += `，尚${remAbs < 0.01 ? '兩清' : (remainingBalance >= 0.005 ? '收' : '欠')} ${remAbs < 0.01 ? formatMoney(0) : formatMoney(remAbs)}`;
+        } else if (remAbs < 0.01) {
+          line += '，已兩清 ✅';
         } else {
-          const sign = balance >= 0.005 ? '應收' : '應俾';
-          text += `${name}：已付 ${formatMoney(paid)}，應付 ${formatMoney(owed)}，${sign} ${formatMoney(abs)}\n`;
+          line += `，${remainingBalance >= 0.005 ? '尚收' : '尚欠'} ${formatMoney(remAbs)}`;
         }
+        text += `${line}\n`;
       });
       text += `${divider}\n`;
-      text += '【每人結餘】\n';
-      Object.entries(balances).sort((a, b) => b[1] - a[1]).forEach(([n, v]) => {
+      text += '【尚收／尚欠】（已扣已結清／基金找數）\n';
+      Object.entries(remainingBalances).sort((a, b) => b[1] - a[1]).forEach(([n, v]) => {
         const abs = Math.abs(v);
         if (abs < 0.01) {
           text += `${n}：已兩清 ✅\n`;
         } else {
-          const sign = v >= 0.005 ? '應收' : '應俾';
+          const sign = v >= 0.005 ? '尚收' : '尚欠';
           text += `${n}：${sign} ${formatMoney(abs)}\n`;
         }
       });
@@ -3780,6 +4006,221 @@ ${SHARE_DATA_END}`;
       act.updatedAt = Date.now();
       saveToStorage();
       showToast(`已標記 ${selected.length} 筆為已結清 · 可撳「還原」撤銷`);
+      renderSettlement();
+    }
+
+    /** 找部分金額（自己轉帳）— 開 modal 撳人名揀收款人，唔郁全局基金 */
+    function partialSettle(from, suggestedTo) {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const balances = computeEffectiveBalances(act);
+      const debtorRemaining = Math.round(Math.max(0, -(balances[from] || 0)) * 100) / 100;
+      if (debtorRemaining < 0.01) {
+        showToast(`${from} 已經唔使再找數`, 'error');
+        return;
+      }
+
+      const creditors = Object.entries(balances)
+        .filter(([, v]) => v > 0.005)
+        .map(([name, amount]) => ({ name, amount: Math.round(amount * 100) / 100 }))
+        .sort((a, b) => b.amount - a.amount);
+
+      if (creditors.length === 0) {
+        showToast('而家冇人應收', 'error');
+        return;
+      }
+
+      const suggestedStillValid = creditors.some(c => c.name === suggestedTo);
+      const selectedTo = suggestedStillValid
+        ? suggestedTo
+        : creditors[0].name;
+
+      partialSettleState = {
+        from,
+        debtorRemaining,
+        creditors,
+        selectedTo
+      };
+      showPartialSettleModal();
+    }
+
+    function getPartialSettleMaxAmount() {
+      if (!partialSettleState) return 0;
+      const { debtorRemaining, creditors, selectedTo } = partialSettleState;
+      const c = creditors.find(x => x.name === selectedTo);
+      const creditorRemaining = c ? c.amount : 0;
+      return Math.round(Math.min(debtorRemaining, creditorRemaining) * 100) / 100;
+    }
+
+    function renderPartialSettleModalContent(opts = {}) {
+      if (!partialSettleState) return;
+      const { resetAmount = false } = opts;
+      const { from, debtorRemaining, creditors, selectedTo } = partialSettleState;
+
+      const sub = document.getElementById('partial-settle-subtitle');
+      if (sub) {
+        sub.innerHTML = `<span class="font-semibold text-red-600">${escapeHtml(from)}</span> 仲欠 <span class="font-semibold tabular-nums text-slate-700">${formatMoney(debtorRemaining)}</span> · 撳下面人名揀今次找畀邊個`;
+      }
+
+      const list = document.getElementById('partial-settle-creditor-list');
+      if (list) {
+        list.innerHTML = '';
+        creditors.forEach(c => {
+          const selected = c.name === selectedTo;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = selected
+            ? 'w-full flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl text-left pressable border border-emerald-400/60 bg-emerald-50/80'
+            : 'w-full flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl text-left pressable glass-control';
+          btn.innerHTML = `
+            <div class="min-w-0 flex items-center gap-2.5">
+              <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${selected ? 'bg-emerald-500 text-white' : 'bg-white/70 text-slate-300 border border-slate-200'}">
+                <i class="fa-solid fa-${selected ? 'check' : 'user'} text-[10px]"></i>
+              </span>
+              <span class="font-semibold text-slate-800 truncate">${escapeHtml(c.name)}</span>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="font-bold tabular-nums text-emerald-700 text-sm">+${formatMoney(c.amount)}</div>
+              <div class="text-[10px] text-emerald-600">尚收</div>
+            </div>
+          `;
+          btn.addEventListener('click', () => selectPartialSettleRecipient(c.name));
+          list.appendChild(btn);
+        });
+      }
+
+      const maxAmt = getPartialSettleMaxAmount();
+      const amountInput = document.getElementById('partial-settle-amount');
+      if (amountInput) {
+        const cur = parseFloat(amountInput.value);
+        if (resetAmount || !amountInput.value || isNaN(cur) || cur > maxAmt + 0.005) {
+          amountInput.value = maxAmt > 0 ? maxAmt.toFixed(2) : '';
+        }
+        amountInput.max = String(maxAmt);
+      }
+      updatePartialSettleMaxHint();
+    }
+
+    function isPartialSettleModalOpen() {
+      const modal = document.getElementById('partial-settle-modal');
+      return !!(modal && !modal.classList.contains('hidden'));
+    }
+
+    function showPartialSettleModal() {
+      const modal = document.getElementById('partial-settle-modal');
+      if (!modal || !partialSettleState) return;
+
+      const alreadyOpen = isPartialSettleModalOpen();
+      renderPartialSettleModalContent({ resetAmount: !alreadyOpen });
+
+      if (!alreadyOpen) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        lockBodyScroll();
+        setTimeout(() => document.getElementById('partial-settle-amount')?.focus(), 80);
+      }
+    }
+
+    function hidePartialSettleModal() {
+      const modal = document.getElementById('partial-settle-modal');
+      if (modal && isPartialSettleModalOpen()) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        unlockBodyScroll();
+      }
+      partialSettleState = null;
+    }
+
+    function selectPartialSettleRecipient(name) {
+      if (!partialSettleState) return;
+      if (!partialSettleState.creditors.some(c => c.name === name)) return;
+      if (partialSettleState.selectedTo === name) return;
+      partialSettleState.selectedTo = name;
+      renderPartialSettleModalContent({ resetAmount: true });
+    }
+
+    function updatePartialSettleMaxHint() {
+      const hint = document.getElementById('partial-settle-max-hint');
+      const btn = document.getElementById('partial-settle-confirm-btn');
+      if (!partialSettleState) {
+        if (hint) hint.textContent = '';
+        if (btn) btn.disabled = true;
+        return;
+      }
+      const maxAmt = getPartialSettleMaxAmount();
+      const { from, selectedTo } = partialSettleState;
+      if (hint) {
+        hint.textContent = selectedTo
+          ? `最多 ${formatMoney(maxAmt)}（${from} 尚欠 同 ${selectedTo} 尚收 取細）`
+          : '請先揀收款人';
+      }
+      const amountInput = document.getElementById('partial-settle-amount');
+      const amt = parseFloat(amountInput?.value || '');
+      if (btn) {
+        btn.disabled = !selectedTo || isNaN(amt) || amt <= 0 || amt > maxAmt + 0.005;
+      }
+    }
+
+    function setPartialSettleAmountPreset(kind) {
+      if (!partialSettleState) return;
+      const maxAmt = getPartialSettleMaxAmount();
+      if (maxAmt < 0.01) return;
+      let amt = maxAmt;
+      if (kind === 'max') {
+        amt = maxAmt;
+      } else if (kind === 0.5) {
+        amt = Math.round(maxAmt * 50) / 100;
+      } else if (typeof kind === 'number') {
+        amt = Math.min(maxAmt, kind);
+      }
+      amt = Math.round(amt * 100) / 100;
+      const amountInput = document.getElementById('partial-settle-amount');
+      if (amountInput) amountInput.value = amt.toFixed(2);
+      updatePartialSettleMaxHint();
+    }
+
+    function confirmPartialSettle() {
+      const act = getCurrentActivity();
+      if (!act || !partialSettleState) return;
+
+      const { from, debtorRemaining, selectedTo } = partialSettleState;
+      if (!selectedTo) {
+        showToast('請先揀找畀邊個', 'error');
+        return;
+      }
+
+      const maxAmt = getPartialSettleMaxAmount();
+      const amountInput = document.getElementById('partial-settle-amount');
+      let amt = parseFloat(amountInput?.value || '');
+      if (isNaN(amt) || amt <= 0) {
+        showToast('請輸入有效金額', 'error');
+        amountInput?.focus();
+        return;
+      }
+      amt = Math.round(Math.min(amt, maxAmt) * 100) / 100;
+      if (amt < 0.01) {
+        showToast('金額太細', 'error');
+        return;
+      }
+
+      const settled = ensureDirectSettlements(act);
+      settled.push({
+        from,
+        to: selectedTo,
+        amount: amt,
+        settledAt: Date.now()
+      });
+      act.updatedAt = Date.now();
+      saveToStorage();
+
+      const stillOwes = Math.round(Math.max(0, debtorRemaining - amt) * 100) / 100;
+      hidePartialSettleModal();
+      showToast(
+        stillOwes >= 0.01
+          ? `已記錄 ${from} 找 ${selectedTo} ${formatMoney(amt)} · ${from} 尚欠 ${formatMoney(stillOwes)}`
+          : `已記錄 ${from} 找 ${selectedTo} ${formatMoney(amt)} · ${from} 已兩清`
+      );
       renderSettlement();
     }
 
@@ -3990,6 +4431,7 @@ ${SHARE_DATA_END}`;
       return act.expenses.map(exp => {
         const { fundPaid, amount, amountToSplit, people, shares } = getExpenseSplitDetails(exp);
         const payerShare = shares[exp.payer] || 0;
+        const scope = getExpenseSplitScope(act, people);
         return {
           id: exp.id,
           description: exp.description,
@@ -3999,6 +4441,8 @@ ${SHARE_DATA_END}`;
           amountToSplit: Math.round(amountToSplit * 100) / 100,
           splitWith: [...people],
           sharesPerPerson: { ...shares },
+          splitIsEveryone: scope.isEveryone,
+          splitExcluded: [...scope.excluded],
           payerShare: Math.round(payerShare * 100) / 100,
           payerNetAdvance: Math.round((amountToSplit - payerShare) * 100) / 100,
           createdAt: exp.createdAt || null
@@ -4008,7 +4452,8 @@ ${SHARE_DATA_END}`;
 
     function buildActivityDiagnostics(act) {
       const balances = computeBalances(act);
-      const settlements = computeSettlements(balances);
+      const effectiveBalances = computeEffectiveBalances(act);
+      const settlements = computeSettlements(effectiveBalances);
       const pending = getPendingSettlements(act);
       const transferred = ensureFundTransfers(act);
       const direct = ensureDirectSettlements(act);
@@ -4027,6 +4472,7 @@ ${SHARE_DATA_END}`;
         expenses: buildExpenseBreakdown(act),
         personSummaries,
         computedBalances: balances,
+        effectiveBalances,
         allSettlements: settlements,
         pendingSettlements: pending,
         fundTransfers: transferred.map(t => ({
@@ -4041,7 +4487,9 @@ ${SHARE_DATA_END}`;
           amount: Number(t.amount) || 0,
           settledAt: t.settledAt || null
         })),
-        balanceSum: Math.round(Object.values(balances).reduce((s, v) => s + v, 0) * 100) / 100
+        handledSettlementTotal: getHandledSettlementTotal(act),
+        balanceSum: Math.round(Object.values(balances).reduce((s, v) => s + v, 0) * 100) / 100,
+        effectiveBalanceSum: Math.round(Object.values(effectiveBalances).reduce((s, v) => s + v, 0) * 100) / 100
       };
     }
 
@@ -4102,7 +4550,11 @@ ${SHARE_DATA_END}`;
         }
         text += `參加者：${focus.participants.join('、') || '（無）'}\n`;
         text += `總開支：${formatMoney(focus.totalExpenses)}（${focus.expenseCount} 筆）\n`;
-        text += `結餘總和（應為 0）：${focus.balanceSum}\n\n`;
+        text += `帳面結餘總和（應為 0）：${focus.balanceSum}\n`;
+        if (focus.effectiveBalanceSum != null) {
+          text += `尚收／尚欠總和（應為 0）：${focus.effectiveBalanceSum}\n`;
+        }
+        text += `\n`;
 
         text += `【開支明細 + 分帳計算】\n`;
         focus.expenses.forEach((e, i) => {
@@ -4110,26 +4562,46 @@ ${SHARE_DATA_END}`;
           text += `   付款人：${e.payer} | 金額：${formatMoney(e.amount)}`;
           if (e.fundPaid > 0.005) text += ` | 基金支付：${formatMoney(e.fundPaid)}`;
           text += `\n`;
-          text += `   分帳 ${formatMoney(e.amountToSplit)}：${e.splitWith.map(p => `${p} ${formatMoney(e.sharesPerPerson[p])}`).join('、')}\n`;
+          const scopeNote = e.splitIsEveryone === false
+            ? `（只分 ${e.splitWith.length} 人${(e.splitExcluded || []).length ? ` · 唔包 ${e.splitExcluded.join('、')}` : ''}）`
+            : '';
+          text += `   分帳 ${formatMoney(e.amountToSplit)}${scopeNote}：${e.splitWith.map(p => `${p} ${formatMoney(e.sharesPerPerson[p])}`).join('、')}\n`;
           if (e.payerShare > 0.005) {
             text += `   ${e.payer} 已付抵扣自己份 ${formatMoney(e.payerShare)}，淨幫墊 ${formatMoney(e.payerNetAdvance)}\n`;
           }
         });
 
-        text += `\n【每人明細（已付 / 應付 / 結餘）】\n`;
+        text += `\n【每人明細（已付 / 應付 / 帳面 / 尚欠）】\n`;
         (focus.personSummaries || []).forEach(p => {
-          text += `  ${p.name}：已付 ${formatMoney(p.paid)}，應付 ${formatMoney(p.owed)}，結餘 ${p.balance >= 0 ? '+' : ''}${p.balance.toFixed(2)}\n`;
+          const book = p.bookBalance != null ? p.bookBalance : p.balance;
+          const rem = p.remainingBalance != null ? p.remainingBalance : p.balance;
+          text += `  ${p.name}：已付 ${formatMoney(p.paid)}，應付 ${formatMoney(p.owed)}，帳面 ${book >= 0 ? '+' : ''}${Number(book).toFixed(2)}，尚收/尚欠 ${rem >= 0 ? '+' : ''}${Number(rem).toFixed(2)}`;
+          if ((p.settledOut || 0) > 0.005 || (p.settledIn || 0) > 0.005) {
+            text += `（已還 ${formatMoney(p.settledOut || 0)} · 已收 ${formatMoney(p.settledIn || 0)}）`;
+          }
+          text += `\n`;
         });
 
-        text += `\n【每人結餘（正=應收，負=應俾）】\n`;
-        Object.entries(focus.computedBalances)
+        text += `\n【帳面結餘】（只計開支；正=應收，負=應俾）\n`;
+        Object.entries(focus.computedBalances || {})
           .sort((a, b) => b[1] - a[1])
           .forEach(([name, val]) => {
             text += `  ${name}：${val >= 0 ? '+' : ''}${val.toFixed(2)}\n`;
           });
 
+        text += `\n【尚收／尚欠】（扣已結清／基金找數後；同畫面「每人結餘」）\n`;
+        Object.entries(focus.effectiveBalances || focus.computedBalances || {})
+          .sort((a, b) => b[1] - a[1])
+          .forEach(([name, val]) => {
+            text += `  ${name}：${val >= 0 ? '+' : ''}${val.toFixed(2)}\n`;
+          });
+
+        if ((focus.handledSettlementTotal || 0) > 0.005) {
+          text += `\n【已處理還款合計】${formatMoney(focus.handledSettlementTotal)}\n`;
+        }
+
         if (focus.pendingSettlements.length > 0) {
-          text += `\n【待還款（最少轉帳）】\n`;
+          text += `\n【待還款（最少轉帳 · 對應尚收／尚欠）】\n`;
           focus.pendingSettlements.forEach(s => {
             text += `  ${s.from} → ${s.to}：${formatMoney(s.amount)}\n`;
           });
@@ -4209,7 +4681,8 @@ ${SHARE_DATA_END}`;
 4. 有需要可用「圓子基金」墊支／找數（全局錢包）
 5. 系統會自動計算每個人結餘同最少還款方案
 
-建議還款：剔選後可「標記已結清」或「由基金找數」；撳錯可「還原」。
+建議還款：剔選後可「標記已結清」或「由基金找數」；綠色小手＝找部分；撳錯可「還原」。
+結餘有兩層：帳面（只計開支）同尚收／尚欠（扣咗已還之後）。圓子基金仍然係一條全局大數。
 文字太細？撳右上角文字掣，可喺 標準 / 大 / 特大 之間切換。
 
 想交俾朋友接手？撳「俾朋友接手」→ WhatsApp 貼上 send。朋友撳「接手記帳」貼返入去就得。
